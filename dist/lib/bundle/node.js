@@ -73,7 +73,7 @@ function installPackages(config) {
     });
 }
 exports.default = (_a, args) => {
-    var { cleanBundleIgnoreDelete, packagesInstallationPath, bundledDependencies } = _a, esbuildConfig = __rest(_a, ["cleanBundleIgnoreDelete", "packagesInstallationPath", "bundledDependencies"]);
+    var { cleanBundleIgnoreDelete, packagesInstallationPath, copyFiles: filePatternsToCopy = [], bundledDependencies } = _a, esbuildConfig = __rest(_a, ["cleanBundleIgnoreDelete", "packagesInstallationPath", "copyFiles", "bundledDependencies"]);
     if (args === void 0) { args = {}; }
     const config = {
         packagesInstallationPath: packagesInstallationPath || NODE_DEFAULTS_BUNDLE.packagesInstallationPath,
@@ -94,6 +94,7 @@ exports.default = (_a, args) => {
                 .then(() => console.log('Packages installed successfully'), err => console.error(`Error installing packages: ${err.stack}`));
         }
     }))
+        .then(() => (0, utils_1.copyFilePatterns)(filePatternsToCopy, packagesInstallationPath))
         .catch(err => {
         console.error(err);
         return process.exit(1);

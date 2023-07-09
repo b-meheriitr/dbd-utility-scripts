@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import {spawn} from 'child_process'
 import fsSync, {promises as fs} from 'fs'
+import {glob} from 'glob'
 import minimist from 'minimist'
 import path from 'path'
 import {rimraf} from 'rimraf'
@@ -45,7 +46,7 @@ export function logTimeTaken(action) {
 			if (projectConfig.profileTime) {
 				const timeTakenInMillis = new Date().getTime() - startTime
 				console.log(
-					'time taken: ',
+					'\n-- time taken: ',
 					timeTakenInMillis > 1000
 						? `${timeTakenInMillis / 1000}s`
 						: `${timeTakenInMillis}ms`,
@@ -74,4 +75,34 @@ export const clean = ({dirPath, ignore = []}) => {
 				throw err
 			}
 		})
+}
+
+export const copyFilePatterns = (filePatterns, destinationDir) => {
+	return Promise.all(
+		filePatterns.map(async ({cwd, pattern = '**/*', ignore}) => {
+			const matchedFiles = await glob(pattern, {cwd, ignore, dot: true})
+
+			return Promise.all(
+				matchedFiles.map(async file => {
+					const sourceFilePath = path.join(cwd, file)
+					const destinationFilePath = path.join(destinationDir, file)
+
+					if ((await fs.stat(sourceFilePath)).isFile()) {
+						try {
+							fsSync.mkdirSync(
+								path.dirname(destinationFilePath),
+								{recursive: true},
+							)
+						} catch (e) {
+							if (e.code !== 'EEXIST') throw e
+						}
+
+						return fs.copyFile(sourceFilePath, destinationFilePath)
+					}
+
+					return -1
+				}),
+			)
+		}),
+	)
 }

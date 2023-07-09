@@ -4,7 +4,7 @@ import fsSync, {promises as fs} from 'fs'
 import _ from 'lodash'
 import path from 'path'
 import {NODE_DEFAULTS} from '../../defaults'
-import {runCommand} from '../utils'
+import {copyFilePatterns, runCommand} from '../utils'
 
 const NODE_DEFAULTS_BUNDLE = NODE_DEFAULTS.bundle
 
@@ -51,6 +51,7 @@ export default (
 	{
 		cleanBundleIgnoreDelete,
 		packagesInstallationPath,
+		copyFiles: filePatternsToCopy = [],
 		bundledDependencies,
 		...esbuildConfig
 	},
@@ -88,6 +89,7 @@ export default (
 					)
 			}
 		})
+		.then(() => copyFilePatterns(filePatternsToCopy, packagesInstallationPath))
 		.catch(err => {
 			console.error(err)
 			return process.exit(1)

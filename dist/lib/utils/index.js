@@ -22,16 +22,26 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clean = exports.logTimeTaken = exports.projectConfig = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
+exports.copyFilePatterns = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
 const child_process_1 = require("child_process");
 const fs_1 = __importStar(require("fs"));
 const minimist_1 = __importDefault(require("minimist"));
 const path_1 = __importDefault(require("path"));
 const rimraf_1 = require("rimraf");
+const glob_1 = require("glob");
 const runCommand = (command, args, cwd = null) => {
     return new Promise((resolve, reject) => {
         const process = (0, child_process_1.spawn)(command, args, { cwd });
@@ -65,7 +75,7 @@ function logTimeTaken(action) {
         .finally(() => {
         if (exports.projectConfig.profileTime) {
             const timeTakenInMillis = new Date().getTime() - startTime;
-            console.log('time taken: ', timeTakenInMillis > 1000
+            console.log('\n-- time taken: ', timeTakenInMillis > 1000
                 ? `${timeTakenInMillis / 1000}s`
                 : `${timeTakenInMillis}ms`);
         }
@@ -90,3 +100,24 @@ const clean = ({ dirPath, ignore = [] }) => {
     });
 };
 exports.clean = clean;
+const copyFilePatterns = (filePatterns, destinationDir) => {
+    return Promise.all(filePatterns.map(({ cwd, pattern = '**/*', ignore }) => __awaiter(void 0, void 0, void 0, function* () {
+        const matchedFiles = yield (0, glob_1.glob)(pattern, { cwd, ignore, dot: true });
+        return Promise.all(matchedFiles.map((file) => __awaiter(void 0, void 0, void 0, function* () {
+            const sourceFilePath = path_1.default.join(cwd, file);
+            const destinationFilePath = path_1.default.join(destinationDir, file);
+            if ((yield fs_1.promises.stat(sourceFilePath)).isFile()) {
+                try {
+                    fs_1.default.mkdirSync(path_1.default.dirname(destinationFilePath), { recursive: true });
+                }
+                catch (e) {
+                    if (e.code !== 'EEXIST')
+                        throw e;
+                }
+                return fs_1.promises.copyFile(sourceFilePath, destinationFilePath);
+            }
+            return -1;
+        })));
+    })));
+};
+exports.copyFilePatterns = copyFilePatterns;
