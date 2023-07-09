@@ -4,11 +4,11 @@ import fsSync, {promises as fs} from 'fs'
 import _ from 'lodash'
 import minimist from 'minimist'
 import path from 'path'
-import {nullIfError, runCommand} from '../../utils'
+import {returnSubstituteIfErr, runCommand} from '../../utils'
 
 const projectPackageJson = JSON.parse(fsSync.readFileSync('./package.json').toString())
 const projectConfig = JSON.parse(
-	nullIfError(() => fsSync.readFileSync('.scripts.json').toString()) || '{}',
+	returnSubstituteIfErr(() => fsSync.readFileSync('.scripts.json'), '{}'),
 )
 
 const {packagesInstallationPath, bundledDependencies, ...CONFIG} = {

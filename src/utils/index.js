@@ -19,11 +19,10 @@ export const runCommand = (command, args, cwd = null) => {
 	})
 }
 
-export function nullIfError(syncAction) {
+export function returnSubstituteIfErr(syncAction, substitute = null) {
 	try {
 		return syncAction()
 	} catch (e) {
-		console.log(e)
-		return null
+		return substitute
 	}
 }
