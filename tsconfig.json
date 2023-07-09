@@ -64,7 +64,7 @@
     /* Specify a file that bundles all outputs into one JavaScript file. If 'declaration' is true, also designates a file that bundles all .d.ts output. */
     /* Specify an output folder for all emitted files. */
     "outDir": "./dist",
-    "declaration": true,
+//    "declaration": true,
     "inlineSourceMap": true,
     /* Include sourcemap files inside the emitted JavaScript. */
     "inlineSources": true,
