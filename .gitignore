@@ -2,3 +2,7 @@ node_modules
 
 .out
 .idea
+
+
+**/*.zip
+**/*.tgz

@@ -14,7 +14,7 @@
     "lint": "eslint -c lint/.eslintrc.js \"{src,test}/**/*.{js,ts}\"",
     "lint:fix": "eslint -c lint/.eslintrc.js \"{src,test}/**/*{.js,ts}\" --fix",
     "lint-staged": "lint-staged --no-stash",
-    "test": "ts-node src/lib/bundle/index.js",
+    "test-bundle": "ts-node src/lib/bundle/index.js",
     "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js"
   },
   "keywords": [

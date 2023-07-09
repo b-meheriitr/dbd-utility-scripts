@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import {spawn} from 'child_process'
+import minimist from 'minimist'
 
 export const runCommand = (command, args, cwd = null) => {
 	return new Promise((resolve, reject) => {
@@ -26,3 +27,5 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 		return substitute
 	}
 }
+
+export const getCliArgs = () => minimist(process.argv.slice(2))

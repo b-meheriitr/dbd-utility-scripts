@@ -2,34 +2,16 @@
 import esbuild from 'esbuild'
 import fsSync, {promises as fs} from 'fs'
 import _ from 'lodash'
-import minimist from 'minimist'
 import path from 'path'
-import {returnSubstituteIfErr, runCommand} from '../../utils'
+import {runCommand} from '../../utils'
 
 const projectPackageJson = JSON.parse(fsSync.readFileSync('./package.json').toString())
-const projectConfig = JSON.parse(
-	returnSubstituteIfErr(() => fsSync.readFileSync('.scripts.json'), '{}'),
-)
 
-const {packagesInstallationPath, bundledDependencies, ...CONFIG} = {
-	packagesInstallationPath: 'dist/bundle',
-	bundledDependencies: [],
-	entryPoints: ['src/bin/www.js'],
-	bundle: true,
-	outFile: 'app.min.js',
-	sourcemap: 'inline',
-	minify: true,
-	metafile: true,
-	...projectConfig,
-}
+const isBundledDepsAllDeps = ({bundledDependencies}) => bundledDependencies === '*' || bundledDependencies[0] === '*'
 
-function isBundledDepsAllDeps() {
-	return bundledDependencies === '*' || bundledDependencies[0] === '*'
-}
-
-function createPackageJsonFile() {
+function createPackageJsonFile(config) {
 	return fs.writeFile(
-		path.join(packagesInstallationPath, 'package.json'),
+		path.join(config.packagesInstallationPath, 'package.json'),
 		JSON.stringify(
 			_.pick(
 				projectPackageJson,
@@ -37,9 +19,9 @@ function createPackageJsonFile() {
 					'name',
 					'engines',
 					'version',
-					...(isBundledDepsAllDeps()
+					...(isBundledDepsAllDeps(config)
 						? ['dependencies']
-						: bundledDependencies.map(b => (`dependencies.${b}`))
+						: config.bundledDependencies.map(b => (`dependencies.${b}`))
 					),
 				],
 			),
@@ -49,33 +31,51 @@ function createPackageJsonFile() {
 	)
 }
 
-async function installPackages() {
+async function installPackages(config) {
 	await fs.cp(
 		'package-lock.json',
-		path.join(packagesInstallationPath, 'package-lock.json'),
+		path.join(config.packagesInstallationPath, 'package-lock.json'),
 	)
 
-	return runCommand('npm', ['install', `--prefix=${path.join(process.cwd(), packagesInstallationPath)}`])
-		.then(() => fs.rm(path.join(packagesInstallationPath, 'package-lock.json')))
+	return runCommand(
+		'npm',
+		['install', `--prefix=${path.join(process.cwd(), config.packagesInstallationPath)}`],
+	)
+		.then(() => fs.rm(path.join(config.packagesInstallationPath, 'package-lock.json')))
 }
 
-export default () => {
-	esbuild.build({
-		entryPoints: CONFIG.entryPoints,
-		bundle: CONFIG.bundle,
-		outfile: path.join(packagesInstallationPath, CONFIG.outFile),
+export default ({packagesInstallationPath, bundledDependencies, ...esbuildConfig}, args = {}) => {
+	const config = {
+		packagesInstallationPath: packagesInstallationPath || 'dist/bundle',
+		bundledDependencies: bundledDependencies || [],
+		esbuildConfig: {
+			entryPoints: ['src/bin/www.js'],
+			bundle: true,
+			outfile: 'app.min.js',
+			sourcemap: 'inline',
+			minify: true,
+			metafile: true,
+			...esbuildConfig,
+		},
+	}
+
+	return esbuild.build({
+		...config.esbuildConfig,
 		platform: 'node',
-		sourcemap: CONFIG.sourcemap,
-		minify: CONFIG.minify,
-		metafile: CONFIG.metafile,
-		external: isBundledDepsAllDeps() ? Object.keys(projectPackageJson.dependencies) : bundledDependencies,
+		outfile: path.join(config.packagesInstallationPath, config.esbuildConfig.outfile),
+		// eslint-disable-next-line no-nested-ternary
+		external: config.esbuildConfig.bundle
+			? isBundledDepsAllDeps(config)
+				? Object.keys(projectPackageJson.dependencies)
+				: config.bundledDependencies
+			: undefined,
 	})
-		.then(({metafile}) => CONFIG.metafile && console.log(esbuild.analyzeMetafileSync(metafile)))
-		.then(() => createPackageJsonFile())
+		.then(({metafile}) => config.esbuildConfig.metafile && console.log(esbuild.analyzeMetafileSync(metafile)))
+		.then(() => createPackageJsonFile(config))
 		.then(async () => {
-			if (minimist(process.argv.slice(2)).ibd) { // ibd stand for installBundledDependencies
+			if (args.ibd) { // ibd stand for installBundledDependencies
 				console.log('installing non-bundled packages')
-				await installPackages()
+				await installPackages(config)
 					.then(
 						() => console.log('Packages installed successfully'),
 						err => console.error(`Error installing packages: ${err.stack}`),
