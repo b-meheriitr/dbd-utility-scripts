@@ -8,13 +8,15 @@
     "package.json"
   ],
   "bin": {
-    "scripts-bundle": "dist/lib/bundle/index.js"
+    "scripts-bundle": "dist/lib/bundle/index.js",
+    "scripts-clean-bundle": "dist/lib/clean/bundle/index.js"
   },
   "scripts": {
     "lint": "eslint -c lint/.eslintrc.js \"{src,test}/**/*.{js,ts}\"",
     "lint:fix": "eslint -c lint/.eslintrc.js \"{src,test}/**/*{.js,ts}\" --fix",
     "lint-staged": "lint-staged --no-stash",
     "test-bundle": "ts-node src/lib/bundle/index.js",
+    "test-clean-bundle": "ts-node src/lib/clean/bundle/index.js",
     "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js"
   },
   "keywords": [
@@ -27,7 +29,8 @@
   "dependencies": {
     "esbuild": "^0.18.11",
     "lodash": "^4.17.21",
-    "minimist": "^1.2.8"
+    "minimist": "^1.2.8",
+    "rimraf": "^5.0.1"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.61.0",
@@ -40,7 +43,6 @@
     "eslint-plugin-no-useless-assign": "^1.0.3",
     "eslint-plugin-unused-imports": "^2.0.0",
     "lint-staged": "^13.2.3",
-    "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },

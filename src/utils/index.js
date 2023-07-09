@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import {spawn} from 'child_process'
+import fsSync from 'fs'
 import minimist from 'minimist'
 
 export const runCommand = (command, args, cwd = null) => {
@@ -30,12 +31,16 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 
 export const getCliArgs = () => minimist(process.argv.slice(2))
 
-export function logTimeTaken(action, {profileTime = true}) {
+export const projectConfig = JSON.parse(
+	returnSubstituteIfErr(() => fsSync.readFileSync('.scripts.config.json'), '{}'),
+)
+
+export function logTimeTaken(action) {
 	const startTime = new Date().getTime()
 
 	return Promise.resolve(action)
 		.finally(() => {
-			if (profileTime) {
+			if (projectConfig.profileTime) {
 				const timeTakenInMillis = new Date().getTime() - startTime
 				console.log(
 					'time taken: ',

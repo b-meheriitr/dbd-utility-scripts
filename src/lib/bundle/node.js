@@ -3,7 +3,10 @@ import esbuild from 'esbuild'
 import fsSync, {promises as fs} from 'fs'
 import _ from 'lodash'
 import path from 'path'
+import {NODE_DEFAULTS} from '../../defaults'
 import {runCommand} from '../../utils'
+
+const NODE_DEFAULTS_BUNDLE = NODE_DEFAULTS.bundle
 
 const projectPackageJson = JSON.parse(fsSync.readFileSync('./package.json').toString())
 
@@ -44,17 +47,20 @@ async function installPackages(config) {
 		.then(() => fs.rm(path.join(config.packagesInstallationPath, 'package-lock.json')))
 }
 
-export default ({packagesInstallationPath, bundledDependencies, ...esbuildConfig}, args = {}) => {
+export default (
+	{
+		cleanBundleIgnoreDelete,
+		packagesInstallationPath,
+		bundledDependencies,
+		...esbuildConfig
+	},
+	args = {},
+) => {
 	const config = {
-		packagesInstallationPath: packagesInstallationPath || 'dist/bundle',
-		bundledDependencies: bundledDependencies || [],
+		packagesInstallationPath: packagesInstallationPath || NODE_DEFAULTS_BUNDLE.packagesInstallationPath,
+		bundledDependencies: bundledDependencies || NODE_DEFAULTS_BUNDLE.bundle.bundledDependencies,
 		esbuildConfig: {
-			entryPoints: ['src/bin/www.js'],
-			bundle: true,
-			outfile: 'app.min.js',
-			sourcemap: 'inline',
-			minify: true,
-			metafile: true,
+			...NODE_DEFAULTS_BUNDLE.esbuildConfig,
 			...esbuildConfig,
 		},
 	}

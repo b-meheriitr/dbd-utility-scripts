@@ -1,5 +1,6 @@
-declare function _default({ packagesInstallationPath, bundledDependencies, ...esbuildConfig }: {
+declare function _default({ cleanBundleIgnoreDelete, packagesInstallationPath, bundledDependencies, ...esbuildConfig }: {
     [x: string]: any;
+    cleanBundleIgnoreDelete: any;
     packagesInstallationPath: any;
     bundledDependencies: any;
 }, args?: {}): Promise<void>;
