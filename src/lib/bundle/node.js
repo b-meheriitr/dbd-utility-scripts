@@ -8,7 +8,7 @@ import {nullIfError, runCommand} from '../../utils'
 
 const projectPackageJson = JSON.parse(fsSync.readFileSync('./package.json').toString())
 const projectConfig = JSON.parse(
-	nullIfError(() => fsSync.readFileSync('.scripts.json')).toString() || {},
+	nullIfError(() => fsSync.readFileSync('.scripts.json').toString()) || '{}',
 )
 
 const {packagesInstallationPath, bundledDependencies, ...CONFIG} = {
