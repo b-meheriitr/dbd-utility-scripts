@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const defaults_1 = require("../defaults");
+const utils_1 = require("../lib/utils");
+const NODE_DEFAULTS_BUNDLE = defaults_1.NODE_DEFAULTS.bundle;
+exports.default = (0, utils_1.logTimeTaken)(() => (0, utils_1.clean)({
+    dirPath: utils_1.projectConfig.bundle.packagesInstallationPath || NODE_DEFAULTS_BUNDLE.packagesInstallationPath,
+    ignore: utils_1.projectConfig.bundle.cleanBundleIgnoreDelete || NODE_DEFAULTS_BUNDLE.cleanBundleIgnoreDelete,
+}));

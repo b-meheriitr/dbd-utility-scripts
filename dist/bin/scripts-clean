@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const utils_1 = require("../lib/utils");
+exports.default = (0, utils_1.logTimeTaken)(() => {
+    if (!utils_1.cliArgs.dirPath) {
+        throw new Error('dirPath can not be empty or null');
+    }
+    return (0, utils_1.clean)(utils_1.cliArgs);
+});

@@ -65,9 +65,9 @@
     /* Specify an output folder for all emitted files. */
     "outDir": "./dist",
 //    "declaration": true,
-    "inlineSourceMap": true,
+    //    "inlineSourceMap": true,
     /* Include sourcemap files inside the emitted JavaScript. */
-    "inlineSources": true,
+    //    "inlineSources": true,
     /* Include source code in the sourcemaps inside the emitted JavaScript. */
 
     /* Disable emitting comments. */

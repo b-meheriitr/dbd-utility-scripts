@@ -17,7 +17,7 @@
     "test-bundle": "ts-node src/bin/bundle.js",
     "test-clean": "ts-node src/bin/clean.js",
     "test-clean-bundle": "ts-node src/bin/clean-bundle.js",
-    "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js"
+    "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js && ts-node scripts/rename-bins.js"
   },
   "keywords": [
     "utility",
