@@ -8,7 +8,7 @@
     "package.json"
   ],
   "bin": {
-    "scripts-bundle": "dist/lib/index.js"
+    "scripts-bundle": "dist/lib/bundle/index.js"
   },
   "scripts": {
     "lint": "eslint -c lint/.eslintrc.js \"{src,test}/**/*.{js,ts}\"",
