@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /* eslint-disable no-console */
 import esbuild from 'esbuild'
 import fsSync, {promises as fs} from 'fs'
@@ -61,29 +59,31 @@ async function installPackages() {
 		.then(() => fs.rm(path.join(packagesInstallationPath, 'package-lock.json')))
 }
 
-export default esbuild.build({
-	entryPoints: CONFIG.entryPoints,
-	bundle: CONFIG.bundle,
-	outfile: path.join(packagesInstallationPath, CONFIG.outFile),
-	platform: 'node',
-	sourcemap: CONFIG.sourcemap,
-	minify: CONFIG.minify,
-	metafile: CONFIG.metafile,
-	external: isBundledDepsAllDeps() ? Object.keys(projectPackageJson.dependencies) : bundledDependencies,
-})
-	.then(({metafile}) => CONFIG.metafile && console.log(esbuild.analyzeMetafileSync(metafile)))
-	.then(() => createPackageJsonFile())
-	.then(async () => {
-		if (minimist(process.argv.slice(2)).ibd) { // ibd stand for installBundledDependencies
-			console.log('installing non-bundled packages')
-			await installPackages()
-				.then(
-					() => console.log('Packages installed successfully'),
-					err => console.error(`Error installing packages: ${err.stack}`),
-				)
-		}
+export default () => {
+	esbuild.build({
+		entryPoints: CONFIG.entryPoints,
+		bundle: CONFIG.bundle,
+		outfile: path.join(packagesInstallationPath, CONFIG.outFile),
+		platform: 'node',
+		sourcemap: CONFIG.sourcemap,
+		minify: CONFIG.minify,
+		metafile: CONFIG.metafile,
+		external: isBundledDepsAllDeps() ? Object.keys(projectPackageJson.dependencies) : bundledDependencies,
 	})
-	.catch(err => {
-		console.error(err)
-		return process.exit(1)
-	})
+		.then(({metafile}) => CONFIG.metafile && console.log(esbuild.analyzeMetafileSync(metafile)))
+		.then(() => createPackageJsonFile())
+		.then(async () => {
+			if (minimist(process.argv.slice(2)).ibd) { // ibd stand for installBundledDependencies
+				console.log('installing non-bundled packages')
+				await installPackages()
+					.then(
+						() => console.log('Packages installed successfully'),
+						err => console.error(`Error installing packages: ${err.stack}`),
+					)
+			}
+		})
+		.catch(err => {
+			console.error(err)
+			return process.exit(1)
+		})
+}

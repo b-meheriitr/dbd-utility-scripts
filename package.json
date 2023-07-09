@@ -8,14 +8,14 @@
     "package.json"
   ],
   "bin": {
-    "scripts-bundle": "dist/lib/bundle.js"
+    "scripts-bundle": "dist/lib/index.js"
   },
   "scripts": {
     "lint": "eslint -c lint/.eslintrc.js \"{src,test}/**/*.{js,ts}\"",
     "lint:fix": "eslint -c lint/.eslintrc.js \"{src,test}/**/*{.js,ts}\" --fix",
     "lint-staged": "lint-staged --no-stash",
-    "test": "ts-node src/lib/node/index.js",
-    "build": "ts-node scripts/clean-dist.js && tsc"
+    "test": "ts-node src/lib/bundle/index.js",
+    "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js"
   },
   "keywords": [
     "utility",
