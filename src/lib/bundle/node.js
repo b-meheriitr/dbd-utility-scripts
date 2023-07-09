@@ -4,7 +4,7 @@ import fsSync, {promises as fs} from 'fs'
 import _ from 'lodash'
 import path from 'path'
 import {NODE_DEFAULTS} from '../../defaults'
-import {runCommand} from '../../utils'
+import {runCommand} from '../utils'
 
 const NODE_DEFAULTS_BUNDLE = NODE_DEFAULTS.bundle
 

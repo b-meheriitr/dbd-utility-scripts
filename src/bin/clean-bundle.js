@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import {NODE_DEFAULTS} from '../../defaults'
-import {clean, logTimeTaken, projectConfig} from '../../utils'
+import {NODE_DEFAULTS} from '../defaults'
+import {clean, logTimeTaken, projectConfig} from '../lib/utils'
 
 const NODE_DEFAULTS_BUNDLE = NODE_DEFAULTS.bundle
 

@@ -8,17 +8,17 @@
     "package.json"
   ],
   "bin": {
-    "scripts-bundle": "dist/lib/bundle/index.js",
-    "scripts-clean": "dist/lib/clean/index.js",
-    "scripts-clean-bundle": "dist/lib/clean/clean-bundle.js"
+    "scripts-bundle": "dist/bin/bundle.js",
+    "scripts-clean": "dist/bin/clean.js",
+    "scripts-clean-bundle": "dist/bin/clean-bundle.js"
   },
   "scripts": {
     "lint": "eslint -c lint/.eslintrc.js \"{src,test}/**/*.{js,ts}\"",
     "lint:fix": "eslint -c lint/.eslintrc.js \"{src,test}/**/*{.js,ts}\" --fix",
     "lint-staged": "lint-staged --no-stash",
-    "test-bundle": "ts-node src/lib/bundle/index.js",
-    "test-clean": "ts-node src/lib/clean/index.js",
-    "test-clean-bundle": "ts-node src/lib/clean/clean-bundle.js",
+    "test-bundle": "ts-node src/bin/bundle.js",
+    "test-clean": "ts-node src/bin/clean.js",
+    "test-clean-bundle": "ts-node src/bin/clean-bundle.js",
     "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js"
   },
   "keywords": [
