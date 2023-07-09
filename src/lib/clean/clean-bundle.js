@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import {NODE_DEFAULTS} from '../../defaults'
 import {clean, logTimeTaken, projectConfig} from '../../utils'
 

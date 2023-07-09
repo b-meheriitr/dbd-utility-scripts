@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import {clean, cliArgs, logTimeTaken} from '../../utils'
 
 export default logTimeTaken(
