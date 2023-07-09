@@ -1,7 +1,9 @@
 /* eslint-disable no-console */
 import {spawn} from 'child_process'
-import fsSync from 'fs'
+import fsSync, {promises as fs} from 'fs'
 import minimist from 'minimist'
+import path from 'path'
+import {rimraf} from 'rimraf'
 
 export const runCommand = (command, args, cwd = null) => {
 	return new Promise((resolve, reject) => {
@@ -29,7 +31,7 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 	}
 }
 
-export const getCliArgs = () => minimist(process.argv.slice(2))
+export const cliArgs = minimist(process.argv.slice(2))
 
 export const projectConfig = JSON.parse(
 	returnSubstituteIfErr(() => fsSync.readFileSync('.scripts.config.json'), '{}'),
@@ -38,7 +40,7 @@ export const projectConfig = JSON.parse(
 export function logTimeTaken(action) {
 	const startTime = new Date().getTime()
 
-	return Promise.resolve(action)
+	return Promise.resolve(action())
 		.finally(() => {
 			if (projectConfig.profileTime) {
 				const timeTakenInMillis = new Date().getTime() - startTime
@@ -48,6 +50,28 @@ export function logTimeTaken(action) {
 						? `${timeTakenInMillis / 1000}s`
 						: `${timeTakenInMillis}ms`,
 				)
+			}
+		})
+}
+
+export const clean = ({dirPath, ignore = []}) => {
+	return fs.readdir(dirPath)
+		.then(files => {
+			return Promise.all(
+				files.map(file => {
+					const filePath = path.join(dirPath, file)
+
+					if (!ignore.includes(file)) {
+						return rimraf.rimraf(filePath)
+					}
+
+					return Promise.resolve(-1)
+				}),
+			)
+		})
+		.catch(err => {
+			if (!(/no such file or directory/.test(err.message))) {
+				throw err
 			}
 		})
 }
