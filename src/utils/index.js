@@ -29,3 +29,20 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 }
 
 export const getCliArgs = () => minimist(process.argv.slice(2))
+
+export function logTimeTaken(action, {profileTime = true}) {
+	const startTime = new Date().getTime()
+
+	return Promise.resolve(action)
+		.finally(() => {
+			if (profileTime) {
+				const timeTakenInMillis = new Date().getTime() - startTime
+				console.log(
+					'time taken: ',
+					timeTakenInMillis > 1000
+						? `${timeTakenInMillis / 1000}s`
+						: `${timeTakenInMillis}ms`,
+				)
+			}
+		})
+}
