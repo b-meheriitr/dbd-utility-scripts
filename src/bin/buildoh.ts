@@ -49,8 +49,6 @@ const buildFormData = archive => {
 }
 
 const toDownloadZip = (options: BuildCliOptions) => {
-	console.log({options})
-
 	if (options.downloadTo) return true
 	if (options.noDownload) return false
 
