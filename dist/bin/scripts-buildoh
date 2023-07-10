@@ -1,0 +1,157 @@
+#!/usr/bin/env node
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const archiver_1 = __importDefault(require("archiver"));
+const axios_1 = __importDefault(require("axios"));
+const form_data_1 = __importDefault(require("form-data"));
+const fs_1 = __importStar(require("fs"));
+const glob_1 = require("glob");
+const ignore_1 = __importDefault(require("ignore"));
+const path_1 = __importDefault(require("path"));
+const utils_1 = require("../lib/utils");
+function getFileContent(filePath) {
+    return fs_1.default.existsSync(filePath)
+        ? fs_1.default.readFileSync(filePath).toString()
+        : '';
+}
+const gitIgnorePatterns = (0, ignore_1.default)()
+    .add('.git')
+    .add(getFileContent('.gitignore'))
+    .add(getFileContent('.git/info/exclude'));
+const createBuildZipArchiveStream = (config) => __awaiter(void 0, void 0, void 0, function* () {
+    const archive = (0, archiver_1.default)('zip', { zlib: { level: 9 } });
+    const codeFiles = yield (0, glob_1.glob)('**/*', { cwd: '.', dot: true, ignore: config.codeBaseZipIgnore });
+    yield Promise.all(codeFiles.map((codeFilePath) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!gitIgnorePatterns.ignores(codeFilePath)) {
+            if ((yield fs_1.promises.stat(codeFilePath)).isFile()) {
+                archive.file(codeFilePath, { name: codeFilePath });
+            }
+        }
+    })));
+    archive.finalize();
+    return archive;
+});
+const buildFormData = archive => {
+    const formData = new form_data_1.default();
+    formData.append('file', archive, { filename: 'codebase.zip' });
+    return formData;
+};
+const toDownloadZip = (options) => {
+    console.log({ options });
+    if (options.downloadTo)
+        return true;
+    if (options.noDownload)
+        return false;
+    return true;
+};
+function createWriteStream(filePath) {
+    const str = fs_1.default.createWriteStream(filePath);
+    fs_1.default.mkdirSync(path_1.default.dirname(filePath), { recursive: true });
+    return str;
+}
+const fun = (buildConfig, options) => {
+    console.log('Sending source codes to build host ...');
+    return createBuildZipArchiveStream(buildConfig)
+        .then((archive) => __awaiter(void 0, void 0, void 0, function* () {
+        const formData = buildFormData(archive);
+        formData.append('body', JSON.stringify({
+            downloadBuildZip: toDownloadZip(options),
+            buildInfo: buildConfig.buildInfo,
+        }));
+        const response = yield (0, axios_1.default)({
+            method: 'POST',
+            baseURL: buildConfig.api.baseUrl,
+            url: buildConfig.api.url,
+            data: formData,
+            headers: Object.assign(Object.assign({}, formData.getHeaders()), { 'app-name': buildConfig.appName }),
+            responseType: 'stream',
+            maxBodyLength: Infinity,
+        });
+        const { resolve: resolveZipDownload, promise: zipDownloadPromise, reject: rejectZipDownload } = (() => {
+            const resolveReject = {};
+            const promise = new Promise((resolve, reject) => {
+                resolveReject.resolve = resolve;
+                resolveReject.reject = reject;
+            });
+            return Object.assign(Object.assign({}, resolveReject), { promise });
+        })();
+        let fileWriter;
+        const tempWriter = createWriteStream('.out/null');
+        tempWriter.write = chunk => {
+            const chunkString = chunk.toString();
+            if (/^message: /.test(chunkString)) {
+                console.log(chunkString);
+            }
+            else if (/^info-attachment: /.test(chunkString)) {
+                const match = chunkString.match(/^info-attachment: attachment name: (.+)/);
+                if (match && !fileWriter) {
+                    fileWriter = createWriteStream(path_1.default.join(options.downloadTo || '.zips', match[1]));
+                    fs_1.default.mkdirSync(path_1.default.dirname(fileWriter.path.toString()), { recursive: true });
+                    fileWriter.on('finish', () => resolveZipDownload(fileWriter.path));
+                    fileWriter.on('error', rejectZipDownload);
+                }
+                else {
+                    console.log(chunkString);
+                }
+            }
+            else if (fileWriter) {
+                fileWriter.write(chunk);
+            }
+            else if (/^error: /.test(chunkString)) {
+                rejectZipDownload(JSON.parse(chunkString.match(/^error: (.+)/)[1]));
+            }
+            else {
+                console.log(chunkString);
+            }
+        };
+        tempWriter.on('finish', () => fileWriter && fileWriter.end());
+        tempWriter.on('error', e => fileWriter && fileWriter.destroy(e));
+        response.data.pipe(tempWriter);
+        response.data.on('error', () => rejectZipDownload('Stream closed abruptly'));
+        if (!toDownloadZip(options)) {
+            response.data.on('end', () => resolveZipDownload());
+            return zipDownloadPromise;
+        }
+        return zipDownloadPromise
+            .then(saveLoc => console.log(`Downloaded zip to ${saveLoc}`));
+    }))
+        .catch(console.error);
+};
+exports.default = (0, utils_1.logTimeTaken)(() => {
+    return fun(Object.assign(Object.assign({}, utils_1.projectConfig.buildoh), { appName: utils_1.projectConfig.appName }), utils_1.cliArgs);
+});

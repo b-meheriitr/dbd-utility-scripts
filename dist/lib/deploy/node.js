@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const archiver_1 = __importDefault(require("archiver"));
 const axios_1 = __importDefault(require("axios"));
 const form_data_1 = __importDefault(require("form-data"));
-const utils_1 = require("../utils");
 const defaults_1 = require("../../defaults");
+const utils_1 = require("../utils");
 const createZipArchiveStream = (packagesInstallationPath, ignoreDelete) => {
     const archive = (0, archiver_1.default)('zip', { zlib: { level: 9 } });
     archive.glob('**/*', { cwd: packagesInstallationPath, ignore: ignoreDelete });
