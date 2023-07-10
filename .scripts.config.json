@@ -1,0 +1,34 @@
+{
+  "profileTime": true,
+  "appName": "test-zz",
+  "bundle": {
+    "packagesInstallationPath": "./dist/bundle",
+    "bundledDependencies": "*",
+    "entryPoints": [
+      "test/index.js"
+    ],
+    "minify": true,
+    "bundle": true,
+    "metafile": false,
+    "cleanBundleIgnoreDelete": []
+  },
+  "deployment": {
+    "deploymentIgnoreDelete": [],
+    "local": {
+      "api": {
+        "baseUrl": "http://localhost:8011",
+        "url": "/api/deploy"
+      }
+    }
+  },
+  "buildoh": {
+    "codeBaseZipIgnore": [],
+    "api": {
+      "baseUrl": "http://localhost:8011",
+      "url": "/api/build"
+    },
+    "buildInfo": {
+      "outDir": "./dist"
+    }
+  }
+}

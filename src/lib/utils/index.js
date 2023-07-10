@@ -34,6 +34,8 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 
 export const cliArgs = minimist(process.argv.slice(2))
 
+export const deploymentEnv = cliArgs.env
+
 export const projectConfig = JSON.parse(
 	returnSubstituteIfErr(() => fsSync.readFileSync('.scripts.config.json'), '{}'),
 )

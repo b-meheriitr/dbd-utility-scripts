@@ -35,13 +35,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.copyFilePatterns = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
+exports.copyFilePatterns = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.deploymentEnv = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
 const child_process_1 = require("child_process");
 const fs_1 = __importStar(require("fs"));
+const glob_1 = require("glob");
 const minimist_1 = __importDefault(require("minimist"));
 const path_1 = __importDefault(require("path"));
 const rimraf_1 = require("rimraf");
-const glob_1 = require("glob");
 const runCommand = (command, args, cwd = null) => {
     return new Promise((resolve, reject) => {
         const process = (0, child_process_1.spawn)(command, args, { cwd });
@@ -68,6 +68,7 @@ function returnSubstituteIfErr(syncAction, substitute = null) {
 }
 exports.returnSubstituteIfErr = returnSubstituteIfErr;
 exports.cliArgs = (0, minimist_1.default)(process.argv.slice(2));
+exports.deploymentEnv = exports.cliArgs.env;
 exports.projectConfig = JSON.parse(returnSubstituteIfErr(() => fs_1.default.readFileSync('.scripts.config.json'), '{}'));
 function logTimeTaken(action) {
     const startTime = new Date().getTime();

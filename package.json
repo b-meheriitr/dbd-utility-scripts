@@ -17,6 +17,8 @@
     "test-bundle": "ts-node src/bin/bundle.js",
     "test-clean": "ts-node src/bin/clean.js",
     "test-clean-bundle": "ts-node src/bin/clean-bundle.js",
+    "test-deploy": "ts-node src/bin/deploy.js --env=local",
+    "test-buildoh": "ts-node src/bin/buildoh.ts",
     "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js && ts-node scripts/rename-bins.js"
   },
   "keywords": [
@@ -32,6 +34,7 @@
     "esbuild": "^0.18.11",
     "form-data": "^4.0.0",
     "glob": "^10.3.3",
+    "ignore": "^5.2.4",
     "lodash": "^4.17.21",
     "minimist": "^1.2.8",
     "moment": "^2.29.4",

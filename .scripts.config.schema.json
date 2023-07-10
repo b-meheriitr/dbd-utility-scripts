@@ -1,0 +1,38 @@
+{
+  "profileTime": true,
+  "appName": "",
+  "bundle": {
+    "packagesInstallationPath": "./dist/bundle",
+    "bundledDependencies": "*",
+    "entryPoints": [
+      "test/index.js"
+    ],
+    "minify": true,
+    "bundle": true,
+    "metafile": false,
+    "cleanBundleIgnoreDelete": [],
+    "copyFiles": [
+      {
+        "cwd": "src",
+        "pattern": [
+          "src/**/*"
+        ]
+      },
+      {
+        "cwd": ".out/test",
+        "ignore": [
+          "p/**/*.txt"
+        ]
+      }
+    ]
+  },
+  "deploy": {
+    "deploymentIgnoreDelete": [],
+    "dev": {
+      "api": {
+        "baseUrl": "http://localhost:8011",
+        "url": "/api/deploy"
+      }
+    }
+  }
+}
