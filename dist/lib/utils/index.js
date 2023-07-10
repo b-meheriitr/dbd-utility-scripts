@@ -74,7 +74,7 @@ function logTimeTaken(action) {
     const startTime = new Date().getTime();
     return Promise.resolve(action())
         .finally(() => {
-        if (exports.projectConfig.profileTime) {
+        if (exports.projectConfig.profileTime === false) {
             const timeTakenInMillis = new Date().getTime() - startTime;
             console.log('\n-- time taken: ', timeTakenInMillis > 1000
                 ? `${timeTakenInMillis / 1000}s`

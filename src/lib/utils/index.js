@@ -45,7 +45,7 @@ export function logTimeTaken(action) {
 
 	return Promise.resolve(action())
 		.finally(() => {
-			if (projectConfig.profileTime) {
+			if (projectConfig.profileTime === false) {
 				const timeTakenInMillis = new Date().getTime() - startTime
 				console.log(
 					'\n-- time taken: ',

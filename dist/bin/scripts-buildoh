@@ -72,7 +72,6 @@ const buildFormData = archive => {
     return formData;
 };
 const toDownloadZip = (options) => {
-    console.log({ options });
     if (options.downloadTo)
         return true;
     if (options.noDownload)

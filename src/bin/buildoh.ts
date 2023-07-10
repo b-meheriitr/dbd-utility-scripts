@@ -153,7 +153,7 @@ export interface BuildConfig {
 		baseUrl: string,
 		url: string,
 	}
-	buildInfo: any,
+	buildInfo?: any,
 }
 
 export interface BuildCliOptions {
