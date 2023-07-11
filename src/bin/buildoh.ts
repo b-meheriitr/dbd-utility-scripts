@@ -182,6 +182,8 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 								}
 							})
 							.then(resolveDeploy, rejectDeploy)
+					} else {
+						rejectDeploy('❌ Error in creating build, see build logs above. Deployment cancelled')
 					}
 				})
 			} else {

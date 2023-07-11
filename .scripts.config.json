@@ -24,7 +24,9 @@
     }
   },
   "buildoh": {
-    "codeBaseZipIgnore": [],
+    "codeBaseZipIgnore": [
+      "node_modules/**"
+    ],
     "api": {
       "baseUrl": "http://localhost:8011",
       "url": "/api/build"
