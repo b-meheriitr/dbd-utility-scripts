@@ -1,7 +1,7 @@
 {
-  "name": "utility-scripts",
+  "name": "@rilk2/scripts-utility",
   "version": "1.0.0",
-  "description": "",
+  "description": "Scripts for frequent development-build-deploy tasks",
   "main": "dist/index.js",
   "files": [
     "dist",
@@ -19,7 +19,8 @@
     "test-clean-bundle": "ts-node src/bin/clean-bundle.js",
     "test-deploy": "ts-node src/bin/deploy.js",
     "test-buildoh": "ts-node src/bin/buildoh.ts --deploy",
-    "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js && ts-node scripts/rename-bins.js"
+    "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js && ts-node scripts/rename-bins.js",
+    "pack": "npm run build && npm pack"
   },
   "keywords": [
     "utility",
