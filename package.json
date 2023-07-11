@@ -17,8 +17,8 @@
     "test-bundle": "ts-node src/bin/bundle.js",
     "test-clean": "ts-node src/bin/clean.js",
     "test-clean-bundle": "ts-node src/bin/clean-bundle.js",
-    "test-deploy": "ts-node src/bin/deploy.js --env=local",
-    "test-buildoh": "ts-node src/bin/buildoh.ts",
+    "test-deploy": "ts-node src/bin/deploy.js",
+    "test-buildoh": "ts-node src/bin/buildoh.ts --deploy",
     "build": "ts-node scripts/clean-dist.js && tsc && ts-node scripts/chmod_x_bins.js && ts-node scripts/rename-bins.js"
   },
   "keywords": [

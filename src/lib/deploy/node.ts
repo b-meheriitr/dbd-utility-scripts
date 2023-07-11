@@ -2,10 +2,15 @@
 import archiver from 'archiver'
 import axios from 'axios'
 import FormData from 'form-data'
+import fsSync from 'fs'
 import {NODE_DEFAULTS} from '../../defaults'
-import {cliArgs} from '../utils'
+import {cliArgs, deploymentEnv, projectConfig} from '../utils'
 
 const createZipArchiveStream = (packagesInstallationPath: string, ignoreDelete) => {
+	if (fsSync.statSync(packagesInstallationPath).isFile()) {
+		return fsSync.createReadStream(packagesInstallationPath)
+	}
+
 	const archive = archiver('zip', {zlib: {level: 9}})
 
 	archive.glob('**/*', {cwd: packagesInstallationPath, ignore: ignoreDelete})
@@ -24,14 +29,15 @@ const buildFormData = (archive, ignoreDelete) => {
 
 const ignorePackagesToDelete = cliArgs.ibd ? [] : ['node_modules/**']
 
-export default (deployConfig: DeployConfig) => {
+export const deploy = (deployConfig: DeployConfig) => {
 	console.log('Deploying to host ...')
 
 	deployConfig.deploymentIgnoreDelete = (deployConfig.deploymentIgnoreDelete || [])
 	deployConfig.deploymentIgnoreDelete.push(...ignorePackagesToDelete)
 
 	const formData = buildFormData(
-		createZipArchiveStream(
+		deployConfig.zipStream
+		|| createZipArchiveStream(
 			deployConfig.packagesInstallationPath || NODE_DEFAULTS.bundle.packagesInstallationPath,
 			ignorePackagesToDelete,
 		),
@@ -61,6 +67,7 @@ export default (deployConfig: DeployConfig) => {
 }
 
 export interface DeployConfig {
+	zipStream: ReadableStream;
 	appName: string,
 	deploymentIgnoreDelete?: string[],
 	packagesInstallationPath?: string,
@@ -68,4 +75,27 @@ export interface DeployConfig {
 		baseUrl: string,
 		url: string,
 	}
+}
+
+function getEnvDeploymentConfig() {
+	const env = deploymentEnv || 'dev'
+	if (env) {
+		const config = projectConfig.deployment[env]
+		if (!config) {
+			throw new Error(`Deployment configuration not found for env: ${env}`)
+		}
+		return config
+	}
+
+	return undefined
+}
+
+export const main = deploymentConfig => {
+	return deploy({
+		appName: projectConfig.appName,
+		packagesInstallationPath: projectConfig.bundle.packagesInstallationPath,
+		...projectConfig.deployment,
+		...deploymentConfig,
+		...getEnvDeploymentConfig(),
+	})
 }

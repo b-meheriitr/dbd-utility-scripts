@@ -44,6 +44,7 @@ const glob_1 = require("glob");
 const ignore_1 = __importDefault(require("ignore"));
 const path_1 = __importDefault(require("path"));
 const utils_1 = require("../lib/utils");
+const node_1 = require("../lib/deploy/node");
 function getFileContent(filePath) {
     return fs_1.default.existsSync(filePath)
         ? fs_1.default.readFileSync(filePath).toString()
@@ -71,10 +72,17 @@ const buildFormData = archive => {
     formData.append('file', archive, { filename: 'codebase.zip' });
     return formData;
 };
+const toDeploy = (options) => {
+    if (options.deploy)
+        return true;
+    return false;
+};
 const toDownloadZip = (options) => {
     if (options.downloadTo)
         return true;
     if (options.noDownload)
+        return false;
+    if (toDeploy(options))
         return false;
     return true;
 };
@@ -89,7 +97,7 @@ const fun = (buildConfig, options) => {
         .then((archive) => __awaiter(void 0, void 0, void 0, function* () {
         const formData = buildFormData(archive);
         formData.append('body', JSON.stringify({
-            downloadBuildZip: toDownloadZip(options),
+            downloadBuildZip: toDownloadZip(options) || toDeploy(options),
             buildInfo: buildConfig.buildInfo,
         }));
         const response = yield (0, axios_1.default)({
@@ -109,8 +117,17 @@ const fun = (buildConfig, options) => {
             });
             return Object.assign(Object.assign({}, resolveReject), { promise });
         })();
+        const { resolve: resolveDeploy, promise: deployPromise, reject: rejectDeploy } = (() => {
+            const resolveReject = {};
+            const promise = new Promise((resolve, reject) => {
+                resolveReject.resolve = resolve;
+                resolveReject.reject = reject;
+            });
+            return Object.assign(Object.assign({}, resolveReject), { promise });
+        })();
+        const totalPromise = Promise.all([zipDownloadPromise, deployPromise]);
         let fileWriter;
-        const tempWriter = createWriteStream('.out/null');
+        const tempWriter = createWriteStream('.out/temp/null');
         tempWriter.write = chunk => {
             const chunkString = chunk.toString();
             if (/^message: /.test(chunkString)) {
@@ -119,7 +136,10 @@ const fun = (buildConfig, options) => {
             else if (/^info-attachment: /.test(chunkString)) {
                 const match = chunkString.match(/^info-attachment: attachment name: (.+)/);
                 if (match && !fileWriter) {
-                    fileWriter = createWriteStream(path_1.default.join(options.downloadTo || '.zips', match[1]));
+                    const zipPath = toDownloadZip(options)
+                        ? path_1.default.join(options.downloadTo || '.zips', match[1])
+                        : path_1.default.join('.out/temp', match[1]);
+                    fileWriter = createWriteStream(zipPath);
                     fs_1.default.mkdirSync(path_1.default.dirname(fileWriter.path.toString()), { recursive: true });
                     fileWriter.on('finish', () => resolveZipDownload(fileWriter.path));
                     fileWriter.on('error', rejectZipDownload);
@@ -142,12 +162,34 @@ const fun = (buildConfig, options) => {
         tempWriter.on('error', e => fileWriter && fileWriter.destroy(e));
         response.data.pipe(tempWriter);
         response.data.on('error', () => rejectZipDownload('Stream closed abruptly'));
-        if (!toDownloadZip(options)) {
-            response.data.on('end', () => resolveZipDownload());
-            return zipDownloadPromise;
+        if (toDownloadZip(options)) {
+            zipDownloadPromise.then(() => console.log(`Downloaded zip to ${fileWriter.path}`));
         }
-        return zipDownloadPromise
-            .then(saveLoc => console.log(`Downloaded zip to ${saveLoc}`));
+        else {
+            response.data.on('end', () => {
+                if (fileWriter) {
+                    fileWriter.on('finish', resolveZipDownload);
+                }
+                else {
+                    resolveZipDownload();
+                }
+            });
+        }
+        if (toDeploy(options)) {
+            zipDownloadPromise.then(() => {
+                (0, node_1.main)({ packagesInstallationPath: fileWriter.path })
+                    .then(() => {
+                    if (!toDownloadZip(options)) {
+                        fs_1.default.rmSync(fileWriter.path);
+                    }
+                })
+                    .then(resolveDeploy, rejectDeploy);
+            });
+        }
+        else {
+            resolveDeploy();
+        }
+        return totalPromise;
     }))
         .catch(console.error);
 };

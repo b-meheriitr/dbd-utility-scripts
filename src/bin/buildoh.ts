@@ -8,6 +8,7 @@ import fsSync, {promises as fs} from 'fs'
 import {glob} from 'glob'
 import ignore from 'ignore'
 import path from 'path'
+import {main} from '../lib/deploy/node'
 import {cliArgs, logTimeTaken, projectConfig} from '../lib/utils'
 
 function getFileContent(filePath) {
@@ -48,9 +49,16 @@ const buildFormData = archive => {
 	return formData
 }
 
+const toDeploy = (options: BuildCliOptions) => {
+	if (options.deploy) return true
+
+	return false
+}
+
 const toDownloadZip = (options: BuildCliOptions) => {
 	if (options.downloadTo) return true
 	if (options.noDownload) return false
+	if (toDeploy(options)) return false
 
 	return true
 }
@@ -70,7 +78,7 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 			const formData = buildFormData(archive)
 
 			formData.append('body', JSON.stringify({
-				downloadBuildZip: toDownloadZip(options),
+				downloadBuildZip: toDownloadZip(options) || toDeploy(options),
 				buildInfo: buildConfig.buildInfo,
 			}))
 
@@ -90,7 +98,6 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 			// @ts-ignore
 			const {resolve: resolveZipDownload, promise: zipDownloadPromise, reject: rejectZipDownload} = (() => {
 				const resolveReject: any = {}
-				// eslint-disable-next-line no-new
 				const promise = new Promise((resolve, reject) => {
 					resolveReject.resolve = resolve
 					resolveReject.reject = reject
@@ -99,8 +106,21 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 				return {...resolveReject, promise}
 			})()
 
+			// @ts-ignore
+			const {resolve: resolveDeploy, promise: deployPromise, reject: rejectDeploy} = (() => {
+				const resolveReject: any = {}
+				const promise = new Promise((resolve, reject) => {
+					resolveReject.resolve = resolve
+					resolveReject.reject = reject
+				})
+
+				return {...resolveReject, promise}
+			})()
+
+			const totalPromise = Promise.all([zipDownloadPromise, deployPromise])
+
 			let fileWriter: fsSync.WriteStream
-			const tempWriter = createWriteStream('.out/null')
+			const tempWriter = createWriteStream('.out/temp/null')
 
 			// @ts-ignore
 			tempWriter.write = chunk => {
@@ -111,7 +131,11 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 					const match = chunkString.match(/^info-attachment: attachment name: (.+)/)
 
 					if (match && !fileWriter) {
-						fileWriter = createWriteStream(path.join(options.downloadTo || '.zips', match[1]))
+						const zipPath = toDownloadZip(options)
+							? path.join(options.downloadTo || '.zips', match[1])
+							: path.join('.out/temp', match[1])
+
+						fileWriter = createWriteStream(zipPath)
 						fsSync.mkdirSync(path.dirname(fileWriter.path.toString()), {recursive: true})
 
 						fileWriter.on('finish', () => resolveZipDownload(fileWriter.path))
@@ -135,13 +159,33 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 
 			response.data.on('error', () => rejectZipDownload('Stream closed abruptly'))
 
-			if (!toDownloadZip(options)) {
-				response.data.on('end', () => resolveZipDownload())
-				return zipDownloadPromise
+			if (toDownloadZip(options)) {
+				zipDownloadPromise.then(() => console.log(`Downloaded zip to ${fileWriter.path}`))
+			} else {
+				response.data.on('end', () => {
+					if (fileWriter) {
+						fileWriter.on('finish', resolveZipDownload)
+					} else {
+						resolveZipDownload()
+					}
+				})
 			}
 
-			return zipDownloadPromise
-				.then(saveLoc => console.log(`Downloaded zip to ${saveLoc}`))
+			if (toDeploy(options)) {
+				zipDownloadPromise.then(() => {
+					main({packagesInstallationPath: fileWriter.path})
+						.then(() => {
+							if (!toDownloadZip(options)) {
+								fsSync.rmSync(fileWriter.path)
+							}
+						})
+						.then(resolveDeploy, rejectDeploy)
+				})
+			} else {
+				resolveDeploy()
+			}
+
+			return totalPromise
 		})
 		.catch(console.error)
 }
@@ -157,6 +201,7 @@ export interface BuildConfig {
 }
 
 export interface BuildCliOptions {
+	deploy: boolean
 	downloadTo?: string,
 	noDownload?: boolean
 }

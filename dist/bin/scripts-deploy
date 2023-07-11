@@ -1,21 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const node_1 = __importDefault(require("../lib/deploy/node"));
+const node_1 = require("../lib/deploy/node");
 const utils_1 = require("../lib/utils");
-function getEnvDeploymentConfig() {
-    if (utils_1.deploymentEnv) {
-        const config = utils_1.projectConfig.deployment[utils_1.deploymentEnv];
-        if (!config) {
-            throw new Error(`Deployment configuration not found for env: ${utils_1.deploymentEnv}`);
-        }
-        return config;
-    }
-    return undefined;
-}
-exports.default = (0, utils_1.logTimeTaken)(() => {
-    return (0, node_1.default)(Object.assign(Object.assign({ appName: utils_1.projectConfig.appName, packagesInstallationPath: utils_1.projectConfig.bundle.packagesInstallationPath }, utils_1.projectConfig.deployment), getEnvDeploymentConfig()));
-});
+exports.default = (0, utils_1.logTimeTaken)(node_1.main);

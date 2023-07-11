@@ -3,12 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.main = exports.deploy = void 0;
 const archiver_1 = __importDefault(require("archiver"));
 const axios_1 = __importDefault(require("axios"));
 const form_data_1 = __importDefault(require("form-data"));
 const defaults_1 = require("../../defaults");
 const utils_1 = require("../utils");
+const fs_1 = __importDefault(require("fs"));
 const createZipArchiveStream = (packagesInstallationPath, ignoreDelete) => {
+    if (fs_1.default.statSync(packagesInstallationPath).isFile()) {
+        return fs_1.default.createReadStream(packagesInstallationPath);
+    }
     const archive = (0, archiver_1.default)('zip', { zlib: { level: 9 } });
     archive.glob('**/*', { cwd: packagesInstallationPath, ignore: ignoreDelete });
     archive.finalize();
@@ -21,11 +26,12 @@ const buildFormData = (archive, ignoreDelete) => {
     return formData;
 };
 const ignorePackagesToDelete = utils_1.cliArgs.ibd ? [] : ['node_modules/**'];
-exports.default = (deployConfig) => {
+const deploy = (deployConfig) => {
     console.log('Deploying to host ...');
     deployConfig.deploymentIgnoreDelete = (deployConfig.deploymentIgnoreDelete || []);
     deployConfig.deploymentIgnoreDelete.push(...ignorePackagesToDelete);
-    const formData = buildFormData(createZipArchiveStream(deployConfig.packagesInstallationPath || defaults_1.NODE_DEFAULTS.bundle.packagesInstallationPath, ignorePackagesToDelete), deployConfig.deploymentIgnoreDelete);
+    const formData = buildFormData(deployConfig.zipStream
+        || createZipArchiveStream(deployConfig.packagesInstallationPath || defaults_1.NODE_DEFAULTS.bundle.packagesInstallationPath, ignorePackagesToDelete), deployConfig.deploymentIgnoreDelete);
     return (0, axios_1.default)({
         method: 'POST',
         baseURL: deployConfig.api.baseUrl,
@@ -42,3 +48,19 @@ exports.default = (deployConfig) => {
         }
     });
 };
+exports.deploy = deploy;
+function getEnvDeploymentConfig() {
+    const env = utils_1.deploymentEnv || 'dev';
+    if (env) {
+        const config = utils_1.projectConfig.deployment[env];
+        if (!config) {
+            throw new Error(`Deployment configuration not found for env: ${env}`);
+        }
+        return config;
+    }
+    return undefined;
+}
+const main = deploymentConfig => {
+    return (0, exports.deploy)(Object.assign(Object.assign(Object.assign({ appName: utils_1.projectConfig.appName, packagesInstallationPath: utils_1.projectConfig.bundle.packagesInstallationPath }, utils_1.projectConfig.deployment), deploymentConfig), getEnvDeploymentConfig()));
+};
+exports.main = main;
