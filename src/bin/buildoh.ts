@@ -173,13 +173,16 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 
 			if (toDeploy(options)) {
 				zipDownloadPromise.then(() => {
-					main({bundlePath: fileWriter.path})
-						.then(() => {
-							if (!toDownloadZip(options)) {
-								fsSync.rmSync(fileWriter.path)
-							}
-						})
-						.then(resolveDeploy, rejectDeploy)
+					// bug: separate promise for build response end and use that
+					if (fileWriter) {
+						main({bundlePath: fileWriter.path})
+							.then(() => {
+								if (!toDownloadZip(options)) {
+									fsSync.rmSync(fileWriter.path)
+								}
+							})
+							.then(resolveDeploy, rejectDeploy)
+					}
 				})
 			} else {
 				resolveDeploy()

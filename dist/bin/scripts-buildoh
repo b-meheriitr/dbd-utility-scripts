@@ -177,13 +177,15 @@ const fun = (buildConfig, options) => {
         }
         if (toDeploy(options)) {
             zipDownloadPromise.then(() => {
-                (0, node_1.main)({ bundlePath: fileWriter.path })
-                    .then(() => {
-                    if (!toDownloadZip(options)) {
-                        fs_1.default.rmSync(fileWriter.path);
-                    }
-                })
-                    .then(resolveDeploy, rejectDeploy);
+                if (fileWriter) {
+                    (0, node_1.main)({ bundlePath: fileWriter.path })
+                        .then(() => {
+                        if (!toDownloadZip(options)) {
+                            fs_1.default.rmSync(fileWriter.path);
+                        }
+                    })
+                        .then(resolveDeploy, rejectDeploy);
+                }
             });
         }
         else {
