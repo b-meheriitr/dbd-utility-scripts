@@ -2,9 +2,11 @@
 import {spawn} from 'child_process'
 import fsSync, {promises as fs} from 'fs'
 import {glob} from 'glob'
+import {camelCase, isArray, mapKeys, mergeWith} from 'lodash'
 import minimist from 'minimist'
 import path from 'path'
 import {rimraf} from 'rimraf'
+import PROJECT_TYPE_DEFAULT_CONFIG from '../../defaults'
 
 export const runCommand = (command, args, cwd = null) => {
 	return new Promise((resolve, reject) => {
@@ -32,12 +34,14 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 	}
 }
 
-export const cliArgs = minimist(process.argv.slice(2))
+export const cliArgs = mapKeys(minimist(process.argv.slice(2)), (_, key) => camelCase(key))
 
 export const deploymentEnv = cliArgs.env
 
-export const projectConfig = JSON.parse(
-	returnSubstituteIfErr(() => fsSync.readFileSync('.scripts.config.json'), '{}'),
+export const projectConfig = mergeWith(
+	PROJECT_TYPE_DEFAULT_CONFIG,
+	JSON.parse(returnSubstituteIfErr(() => fsSync.readFileSync('.scripts.config.json'), '{}')),
+	(srcValue, targetValue) => (isArray(targetValue) ? targetValue : undefined),
 )
 
 export function logTimeTaken(action) {

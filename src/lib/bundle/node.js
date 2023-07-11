@@ -3,10 +3,9 @@ import esbuild from 'esbuild'
 import fsSync, {promises as fs} from 'fs'
 import _ from 'lodash'
 import path from 'path'
-import {NODE_DEFAULTS} from '../../defaults'
-import {copyFilePatterns, runCommand} from '../utils'
+import {copyFilePatterns, projectConfig, runCommand} from '../utils'
 
-const NODE_DEFAULTS_BUNDLE = NODE_DEFAULTS.bundle
+const NODE_DEFAULTS_BUNDLE = projectConfig.bundle
 
 const projectPackageJson = JSON.parse(fsSync.readFileSync('./package.json').toString())
 
@@ -14,7 +13,7 @@ const isBundledDepsAllDeps = ({bundledDependencies}) => bundledDependencies === 
 
 function createPackageJsonFile(config) {
 	return fs.writeFile(
-		path.join(config.packagesInstallationPath, 'package.json'),
+		path.join(config.bundlePath, 'package.json'),
 		JSON.stringify(
 			_.pick(
 				projectPackageJson,
@@ -34,32 +33,31 @@ function createPackageJsonFile(config) {
 	)
 }
 
-async function installPackages(config) {
+async function installPackages({bundlePath}) {
 	await fs.cp(
 		'package-lock.json',
-		path.join(config.packagesInstallationPath, 'package-lock.json'),
+		path.join(bundlePath, 'package-lock.json'),
 	)
 
 	return runCommand(
 		'npm',
-		['install', `--prefix=${path.join(process.cwd(), config.packagesInstallationPath)}`],
+		['install', `--prefix=${path.join(process.cwd(), bundlePath)}`],
 	)
-		.then(() => fs.rm(path.join(config.packagesInstallationPath, 'package-lock.json')))
+		.then(() => fs.rm(path.join(bundlePath, 'package-lock.json')))
 }
 
 export default (
 	{
-		cleanBundleIgnoreDelete,
-		packagesInstallationPath,
+		bundlePath,
 		copyFiles: filePatternsToCopy = [],
 		bundledDependencies,
-		...esbuildConfig
+		esbuildConfig,
 	},
 	args = {},
 ) => {
 	const config = {
-		packagesInstallationPath: packagesInstallationPath || NODE_DEFAULTS_BUNDLE.packagesInstallationPath,
-		bundledDependencies: bundledDependencies || NODE_DEFAULTS_BUNDLE.bundle.bundledDependencies,
+		bundlePath: bundlePath || NODE_DEFAULTS_BUNDLE.bundlePath,
+		bundledDependencies: bundledDependencies || NODE_DEFAULTS_BUNDLE.bundledDependencies,
 		esbuildConfig: {
 			...NODE_DEFAULTS_BUNDLE.esbuildConfig,
 			...esbuildConfig,
@@ -69,7 +67,7 @@ export default (
 	return esbuild.build({
 		...config.esbuildConfig,
 		platform: 'node',
-		outfile: path.join(config.packagesInstallationPath, config.esbuildConfig.outfile),
+		outfile: path.join(config.bundlePath, config.esbuildConfig.outfile),
 		// eslint-disable-next-line no-nested-ternary
 		external: config.esbuildConfig.bundle
 			? isBundledDepsAllDeps(config)
@@ -89,7 +87,7 @@ export default (
 					)
 			}
 		})
-		.then(() => copyFilePatterns(filePatternsToCopy, packagesInstallationPath))
+		.then(() => copyFilePatterns(filePatternsToCopy, bundlePath))
 		.catch(err => {
 			console.error(err)
 			return process.exit(1)

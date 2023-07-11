@@ -2,14 +2,16 @@
   "profileTime": true,
   "appName": "",
   "bundle": {
-    "packagesInstallationPath": "./dist/bundle",
+    "bundlePath": "./dist/bundle",
     "bundledDependencies": "*",
-    "entryPoints": [
-      "test/index.js"
-    ],
-    "minify": true,
-    "bundle": true,
-    "metafile": false,
+    "esbuildConfig": {
+      "entryPoints": [
+        "test/index.js"
+      ],
+      "minify": true,
+      "bundle": true,
+      "metafile": false
+    },
     "cleanBundleIgnoreDelete": [],
     "copyFiles": [
       {

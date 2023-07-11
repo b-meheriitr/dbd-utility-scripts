@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NODE_DEFAULTS = void 0;
 exports.NODE_DEFAULTS = {
     bundle: {
-        packagesInstallationPath: 'dist/bundle',
+        bundlePath: 'dist/bundle',
         bundledDependencies: [],
         esbuildConfig: {
             entryPoints: ['src/bin/www.js'],
@@ -16,3 +16,4 @@ exports.NODE_DEFAULTS = {
         cleanBundleIgnoreDelete: ['node_modules'],
     },
 };
+exports.default = exports.NODE_DEFAULTS;

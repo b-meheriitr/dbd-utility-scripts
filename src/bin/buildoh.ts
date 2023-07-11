@@ -173,7 +173,7 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 
 			if (toDeploy(options)) {
 				zipDownloadPromise.then(() => {
-					main({packagesInstallationPath: fileWriter.path})
+					main({bundlePath: fileWriter.path})
 						.then(() => {
 							if (!toDownloadZip(options)) {
 								fsSync.rmSync(fileWriter.path)

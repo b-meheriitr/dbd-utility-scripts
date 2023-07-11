@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
-import {NODE_DEFAULTS} from '../defaults'
 import {clean, logTimeTaken, projectConfig} from '../lib/utils'
 
-const NODE_DEFAULTS_BUNDLE = NODE_DEFAULTS.bundle
+const NODE_DEFAULTS_BUNDLE = projectConfig.bundle
 
 export default logTimeTaken(
 	() => clean({
-		dirPath: projectConfig.bundle.packagesInstallationPath || NODE_DEFAULTS_BUNDLE.packagesInstallationPath,
+		dirPath: projectConfig.bundle.bundlePath || NODE_DEFAULTS_BUNDLE.bundlePath,
 		ignore: projectConfig.bundle.cleanBundleIgnoreDelete || NODE_DEFAULTS_BUNDLE.cleanBundleIgnoreDelete,
 	}),
 )

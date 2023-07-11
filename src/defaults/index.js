@@ -1,6 +1,6 @@
 export const NODE_DEFAULTS = {
 	bundle: {
-		packagesInstallationPath: 'dist/bundle',
+		bundlePath: 'dist/bundle',
 		bundledDependencies: [],
 		esbuildConfig: {
 			entryPoints: ['src/bin/www.js'],
@@ -13,3 +13,5 @@ export const NODE_DEFAULTS = {
 		cleanBundleIgnoreDelete: ['node_modules'],
 	},
 }
+
+export default NODE_DEFAULTS

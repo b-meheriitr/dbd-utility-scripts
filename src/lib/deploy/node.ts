@@ -3,17 +3,16 @@ import archiver from 'archiver'
 import axios from 'axios'
 import FormData from 'form-data'
 import fsSync from 'fs'
-import {NODE_DEFAULTS} from '../../defaults'
 import {cliArgs, deploymentEnv, projectConfig} from '../utils'
 
-const createZipArchiveStream = (packagesInstallationPath: string, ignoreDelete) => {
-	if (fsSync.statSync(packagesInstallationPath).isFile()) {
-		return fsSync.createReadStream(packagesInstallationPath)
+const createZipArchiveStream = (bundlePath: string, ignoreDelete) => {
+	if (fsSync.statSync(bundlePath).isFile()) {
+		return fsSync.createReadStream(bundlePath)
 	}
 
 	const archive = archiver('zip', {zlib: {level: 9}})
 
-	archive.glob('**/*', {cwd: packagesInstallationPath, ignore: ignoreDelete})
+	archive.glob('**/*', {cwd: bundlePath, ignore: ignoreDelete})
 	archive.finalize()
 
 	return archive
@@ -38,7 +37,7 @@ export const deploy = (deployConfig: DeployConfig) => {
 	const formData = buildFormData(
 		deployConfig.zipStream
 		|| createZipArchiveStream(
-			deployConfig.packagesInstallationPath || NODE_DEFAULTS.bundle.packagesInstallationPath,
+			deployConfig.bundlePath || projectConfig.bundle.bundlePath,
 			ignorePackagesToDelete,
 		),
 		deployConfig.deploymentIgnoreDelete,
@@ -70,7 +69,7 @@ export interface DeployConfig {
 	zipStream: ReadableStream;
 	appName: string,
 	deploymentIgnoreDelete?: string[],
-	packagesInstallationPath?: string,
+	bundlePath?: string,
 	api: {
 		baseUrl: string,
 		url: string,
@@ -93,7 +92,7 @@ function getEnvDeploymentConfig() {
 export const main = deploymentConfig => {
 	return deploy({
 		appName: projectConfig.appName,
-		packagesInstallationPath: projectConfig.bundle.packagesInstallationPath,
+		bundlePath: projectConfig.bundle.bundlePath,
 		...projectConfig.deployment,
 		...deploymentConfig,
 		...getEnvDeploymentConfig(),

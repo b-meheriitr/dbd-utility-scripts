@@ -31,17 +31,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -50,13 +39,12 @@ const esbuild_1 = __importDefault(require("esbuild"));
 const fs_1 = __importStar(require("fs"));
 const lodash_1 = __importDefault(require("lodash"));
 const path_1 = __importDefault(require("path"));
-const defaults_1 = require("../../defaults");
 const utils_1 = require("../utils");
-const NODE_DEFAULTS_BUNDLE = defaults_1.NODE_DEFAULTS.bundle;
+const NODE_DEFAULTS_BUNDLE = utils_1.projectConfig.bundle;
 const projectPackageJson = JSON.parse(fs_1.default.readFileSync('./package.json').toString());
 const isBundledDepsAllDeps = ({ bundledDependencies }) => bundledDependencies === '*' || bundledDependencies[0] === '*';
 function createPackageJsonFile(config) {
-    return fs_1.promises.writeFile(path_1.default.join(config.packagesInstallationPath, 'package.json'), JSON.stringify(lodash_1.default.pick(projectPackageJson, [
+    return fs_1.promises.writeFile(path_1.default.join(config.bundlePath, 'package.json'), JSON.stringify(lodash_1.default.pick(projectPackageJson, [
         'name',
         'engines',
         'version',
@@ -65,22 +53,20 @@ function createPackageJsonFile(config) {
             : config.bundledDependencies.map(b => (`dependencies.${b}`))),
     ]), null, 2));
 }
-function installPackages(config) {
+function installPackages({ bundlePath }) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield fs_1.promises.cp('package-lock.json', path_1.default.join(config.packagesInstallationPath, 'package-lock.json'));
-        return (0, utils_1.runCommand)('npm', ['install', `--prefix=${path_1.default.join(process.cwd(), config.packagesInstallationPath)}`])
-            .then(() => fs_1.promises.rm(path_1.default.join(config.packagesInstallationPath, 'package-lock.json')));
+        yield fs_1.promises.cp('package-lock.json', path_1.default.join(bundlePath, 'package-lock.json'));
+        return (0, utils_1.runCommand)('npm', ['install', `--prefix=${path_1.default.join(process.cwd(), bundlePath)}`])
+            .then(() => fs_1.promises.rm(path_1.default.join(bundlePath, 'package-lock.json')));
     });
 }
-exports.default = (_a, args) => {
-    var { cleanBundleIgnoreDelete, packagesInstallationPath, copyFiles: filePatternsToCopy = [], bundledDependencies } = _a, esbuildConfig = __rest(_a, ["cleanBundleIgnoreDelete", "packagesInstallationPath", "copyFiles", "bundledDependencies"]);
-    if (args === void 0) { args = {}; }
+exports.default = ({ bundlePath, copyFiles: filePatternsToCopy = [], bundledDependencies, esbuildConfig, }, args = {}) => {
     const config = {
-        packagesInstallationPath: packagesInstallationPath || NODE_DEFAULTS_BUNDLE.packagesInstallationPath,
-        bundledDependencies: bundledDependencies || NODE_DEFAULTS_BUNDLE.bundle.bundledDependencies,
+        bundlePath: bundlePath || NODE_DEFAULTS_BUNDLE.bundlePath,
+        bundledDependencies: bundledDependencies || NODE_DEFAULTS_BUNDLE.bundledDependencies,
         esbuildConfig: Object.assign(Object.assign({}, NODE_DEFAULTS_BUNDLE.esbuildConfig), esbuildConfig),
     };
-    return esbuild_1.default.build(Object.assign(Object.assign({}, config.esbuildConfig), { platform: 'node', outfile: path_1.default.join(config.packagesInstallationPath, config.esbuildConfig.outfile), external: config.esbuildConfig.bundle
+    return esbuild_1.default.build(Object.assign(Object.assign({}, config.esbuildConfig), { platform: 'node', outfile: path_1.default.join(config.bundlePath, config.esbuildConfig.outfile), external: config.esbuildConfig.bundle
             ? isBundledDepsAllDeps(config)
                 ? Object.keys(projectPackageJson.dependencies)
                 : config.bundledDependencies
@@ -94,7 +80,7 @@ exports.default = (_a, args) => {
                 .then(() => console.log('Packages installed successfully'), err => console.error(`Error installing packages: ${err.stack}`));
         }
     }))
-        .then(() => (0, utils_1.copyFilePatterns)(filePatternsToCopy, packagesInstallationPath))
+        .then(() => (0, utils_1.copyFilePatterns)(filePatternsToCopy, bundlePath))
         .catch(err => {
         console.error(err);
         return process.exit(1);

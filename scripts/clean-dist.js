@@ -2,13 +2,13 @@ import {promises as fs} from 'fs'
 import path from 'path'
 import {rimraf} from 'rimraf'
 
-const packagesInstallationPath = 'dist'
+const distDir = 'dist'
 
-export default fs.readdir(packagesInstallationPath)
+export default fs.readdir(distDir)
 	.then(files => {
 		return Promise.all(
 			files.map(async file => {
-				const filePath = path.join(packagesInstallationPath, file)
+				const filePath = path.join(distDir, file)
 
 				if (file !== 'node_modules') {
 					return rimraf.rimraf(filePath)
