@@ -8,13 +8,14 @@ import fsSync, {promises as fs} from 'fs'
 import {glob} from 'glob'
 import ignore from 'ignore'
 import path from 'path'
+import Constants from '../defaults/constants'
 import {main} from '../lib/deploy/node'
 import {cliArgs, logTimeTaken, projectConfig} from '../lib/utils'
 
 function getFileContent(filePath) {
 	return fsSync.existsSync(filePath)
-		? fsSync.readFileSync(filePath).toString()
-		: ''
+	       ? fsSync.readFileSync(filePath).toString()
+	       : ''
 }
 
 // bug: doesnt include nested .gits
@@ -79,13 +80,16 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 
 			formData.append('body', JSON.stringify({
 				downloadBuildZip: toDownloadZip(options) || toDeploy(options),
-				buildInfo: buildConfig.buildInfo,
+				buildInfo: {
+					...buildConfig.buildInfo,
+					bundlePath: projectConfig.bundle.bundlePath,
+				},
 			}))
 
 			const response = await axios({
 				method: 'POST',
 				baseURL: buildConfig.api.baseUrl,
-				url: buildConfig.api.url,
+				url: Constants.BUILDOH_API_PATH,
 				data: formData,
 				headers: {
 					...formData.getHeaders(),
@@ -132,8 +136,8 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 
 					if (match && !fileWriter) {
 						const zipPath = toDownloadZip(options)
-							? path.join(options.downloadTo || '.zips', match[1])
-							: path.join('.out/temp', match[1])
+						                ? path.join(options.downloadTo || '.zips', match[1])
+						                : path.join('.out/temp', match[1])
 
 						fileWriter = createWriteStream(zipPath)
 						fsSync.mkdirSync(path.dirname(fileWriter.path.toString()), {recursive: true})
@@ -200,7 +204,6 @@ export interface BuildConfig {
 	codeBaseZipIgnore?: string[],
 	api: {
 		baseUrl: string,
-		url: string,
 	}
 	buildInfo?: any,
 }

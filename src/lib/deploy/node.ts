@@ -3,6 +3,7 @@ import archiver from 'archiver'
 import axios from 'axios'
 import FormData from 'form-data'
 import fsSync from 'fs'
+import Constants from '../../defaults/constants'
 import {cliArgs, deploymentEnv, projectConfig} from '../utils'
 
 const createZipArchiveStream = (bundlePath: string, ignoreDelete) => {
@@ -46,7 +47,7 @@ export const deploy = (deployConfig: DeployConfig) => {
 	return axios({
 		method: 'POST',
 		baseURL: deployConfig.api.baseUrl,
-		url: deployConfig.api.url,
+		url: Constants.DEPLOYMENT_API_PATH,
 		data: formData,
 		headers: {
 			...formData.getHeaders(),
@@ -72,7 +73,6 @@ export interface DeployConfig {
 	bundlePath?: string,
 	api: {
 		baseUrl: string,
-		url: string,
 	}
 }
 

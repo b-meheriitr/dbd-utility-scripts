@@ -43,6 +43,7 @@ const fs_1 = __importStar(require("fs"));
 const glob_1 = require("glob");
 const ignore_1 = __importDefault(require("ignore"));
 const path_1 = __importDefault(require("path"));
+const constants_1 = __importDefault(require("../defaults/constants"));
 const node_1 = require("../lib/deploy/node");
 const utils_1 = require("../lib/utils");
 function getFileContent(filePath) {
@@ -98,12 +99,12 @@ const fun = (buildConfig, options) => {
         const formData = buildFormData(archive);
         formData.append('body', JSON.stringify({
             downloadBuildZip: toDownloadZip(options) || toDeploy(options),
-            buildInfo: buildConfig.buildInfo,
+            buildInfo: Object.assign(Object.assign({}, buildConfig.buildInfo), { bundlePath: utils_1.projectConfig.bundle.bundlePath }),
         }));
         const response = yield (0, axios_1.default)({
             method: 'POST',
             baseURL: buildConfig.api.baseUrl,
-            url: buildConfig.api.url,
+            url: constants_1.default.BUILDOH_API_PATH,
             data: formData,
             headers: Object.assign(Object.assign({}, formData.getHeaders()), { 'app-name': buildConfig.appName }),
             responseType: 'stream',

@@ -18,8 +18,7 @@
     "deploymentIgnoreDelete": [],
     "dev": {
       "api": {
-        "baseUrl": "http://localhost:8011",
-        "url": "/api/deploy"
+        "baseUrl": "http://localhost:8011"
       }
     }
   },
@@ -28,11 +27,9 @@
       "node_modules/**"
     ],
     "api": {
-      "baseUrl": "http://localhost:8011",
-      "url": "/api/build"
+      "baseUrl": "http://localhost:8011"
     },
     "buildInfo": {
-      "outDir": "./dist"
     }
   }
 }

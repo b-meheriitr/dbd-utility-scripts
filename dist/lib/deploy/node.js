@@ -8,6 +8,7 @@ const archiver_1 = __importDefault(require("archiver"));
 const axios_1 = __importDefault(require("axios"));
 const form_data_1 = __importDefault(require("form-data"));
 const fs_1 = __importDefault(require("fs"));
+const constants_1 = __importDefault(require("../../defaults/constants"));
 const utils_1 = require("../utils");
 const createZipArchiveStream = (bundlePath, ignoreDelete) => {
     if (fs_1.default.statSync(bundlePath).isFile()) {
@@ -34,7 +35,7 @@ const deploy = (deployConfig) => {
     return (0, axios_1.default)({
         method: 'POST',
         baseURL: deployConfig.api.baseUrl,
-        url: deployConfig.api.url,
+        url: constants_1.default.DEPLOYMENT_API_PATH,
         data: formData,
         headers: Object.assign(Object.assign({}, formData.getHeaders()), { 'app-name': deployConfig.appName }),
     })

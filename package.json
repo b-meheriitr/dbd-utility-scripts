@@ -1,11 +1,13 @@
 {
-  "name": "@rilk2/scripts-utility",
-  "version": "1.0.0",
+  "name": "dbd-utility-scripts",
+  "version": "1.0.1",
   "description": "Scripts for frequent development-build-deploy tasks",
+  "private": false,
   "main": "dist/index.js",
   "files": [
     "dist",
-    "package.json"
+    "package.json",
+    "README.md"
   ],
   "directories": {
     "bin": "dist/bin"
