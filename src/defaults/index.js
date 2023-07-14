@@ -1,17 +1,41 @@
-export const NODE_DEFAULTS = {
-	bundle: {
-		bundlePath: 'dist/bundle',
-		bundledDependencies: [],
-		esbuildConfig: {
-			entryPoints: ['src/bin/www.js'],
-			bundle: true,
-			outfile: 'app.min.js',
-			sourcemap: 'inline',
-			minify: true,
-			metafile: true,
-		},
-		cleanBundleIgnoreDelete: ['node_modules'],
+import {isArray, mergeWith} from 'lodash'
+
+export const DEFAULTS = {
+	build: {
+		copyFiles: [],
+		cleanBuildIgnoreDelete: [],
+	},
+	deployment: {
+		deploymentIgnoreDelete: [],
 	},
 }
 
-export default NODE_DEFAULTS
+export const NODE_DEFAULTS = {
+	build: {
+		buildInfo: {
+			bundle: {
+				bundledDependencies: [],
+				esbuildConfig: {
+					entryPoints: ['src/bin/www.js'],
+					bundle: true,
+					outfile: 'app.min.js',
+					sourcemap: 'inline',
+					minify: true,
+					metafile: true,
+				},
+			},
+		},
+		buildPath: 'dist/bundle',
+		cleanBuildIgnoreDelete: ['node_modules'],
+		dependencyPackagesFilePatterns: ['node_modules/**'],
+	},
+	deployment: {
+		deploymentIgnoreDelete: ['node_modules/**'],
+	},
+}
+
+export default mergeWith(
+	DEFAULTS,
+	NODE_DEFAULTS,
+	(srcValue, targetValue) => (isArray(targetValue) ? targetValue : undefined),
+)

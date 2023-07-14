@@ -1,27 +1,21 @@
 /* eslint-disable no-console */
-import {spawn} from 'child_process'
+import {exec} from 'child_process'
 import fsSync, {promises as fs} from 'fs'
 import {glob} from 'glob'
-import {camelCase, isArray, mapKeys, mergeWith} from 'lodash'
+import {camelCase, isArray, mapKeys, mapValues, mergeWith} from 'lodash'
 import minimist from 'minimist'
 import path from 'path'
 import {rimraf} from 'rimraf'
 import PROJECT_TYPE_DEFAULT_CONFIG from '../../defaults'
 
-export const runCommand = (command, args, cwd = null) => {
+export const runCommand = (command, cwd) => {
 	return new Promise((resolve, reject) => {
-		const process = spawn(command, args, {cwd})
-
-		process.stdout.on('data', data => console.log(data.toString()))
-
-		process.stderr.on('data', data => console.error(data.toString()))
-
-		process.on('close', code => {
-			if (code === 0) {
-				resolve()
-			} else {
-				reject(new Error(`Command '${command} ${args.join(' ')}' exited with code ${code}`))
+		exec(command, {cwd}, (error, stdout, stderr) => {
+			if (error) {
+				reject(error)
 			}
+
+			resolve({stderr, stdout})
 		})
 	})
 }
@@ -34,9 +28,18 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 	}
 }
 
-export const cliArgs = mapKeys(minimist(process.argv.slice(2)), (_, key) => camelCase(key))
-
-export const deploymentEnv = cliArgs.env
+export const cliArgs = mapValues(
+	mapKeys(minimist(process.argv.slice(2)), (_, key) => camelCase(key)),
+	value => {
+		if (value === 'true') {
+			return true
+		}
+		if (value === 'false') {
+			return false
+		}
+		return value
+	},
+)
 
 export const projectConfig = mergeWith(
 	PROJECT_TYPE_DEFAULT_CONFIG,
@@ -48,6 +51,7 @@ export function logTimeTaken(action) {
 	const startTime = new Date().getTime()
 
 	return Promise.resolve(action())
+		.catch(err => console.error(err.message))
 		.finally(() => {
 			if (projectConfig.profileTime !== false) {
 				const timeTakenInMillis = new Date().getTime() - startTime

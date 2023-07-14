@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.copyFilePatterns = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.deploymentEnv = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
+exports.copyFilePatterns = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
 const child_process_1 = require("child_process");
 const fs_1 = __importStar(require("fs"));
 const glob_1 = require("glob");
@@ -44,18 +44,13 @@ const minimist_1 = __importDefault(require("minimist"));
 const path_1 = __importDefault(require("path"));
 const rimraf_1 = require("rimraf");
 const defaults_1 = __importDefault(require("../../defaults"));
-const runCommand = (command, args, cwd = null) => {
+const runCommand = (command, cwd) => {
     return new Promise((resolve, reject) => {
-        const process = (0, child_process_1.spawn)(command, args, { cwd });
-        process.stdout.on('data', data => console.log(data.toString()));
-        process.stderr.on('data', data => console.error(data.toString()));
-        process.on('close', code => {
-            if (code === 0) {
-                resolve();
+        (0, child_process_1.exec)(command, { cwd }, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
             }
-            else {
-                reject(new Error(`Command '${command} ${args.join(' ')}' exited with code ${code}`));
-            }
+            resolve({ stderr, stdout });
         });
     });
 };
@@ -69,12 +64,20 @@ function returnSubstituteIfErr(syncAction, substitute = null) {
     }
 }
 exports.returnSubstituteIfErr = returnSubstituteIfErr;
-exports.cliArgs = (0, lodash_1.mapKeys)((0, minimist_1.default)(process.argv.slice(2)), (_, key) => (0, lodash_1.camelCase)(key));
-exports.deploymentEnv = exports.cliArgs.env;
+exports.cliArgs = (0, lodash_1.mapValues)((0, lodash_1.mapKeys)((0, minimist_1.default)(process.argv.slice(2)), (_, key) => (0, lodash_1.camelCase)(key)), value => {
+    if (value === 'true') {
+        return true;
+    }
+    if (value === 'false') {
+        return false;
+    }
+    return value;
+});
 exports.projectConfig = (0, lodash_1.mergeWith)(defaults_1.default, JSON.parse(returnSubstituteIfErr(() => fs_1.default.readFileSync('.scripts.config.json'), '{}')), (srcValue, targetValue) => ((0, lodash_1.isArray)(targetValue) ? targetValue : undefined));
 function logTimeTaken(action) {
     const startTime = new Date().getTime();
     return Promise.resolve(action())
+        .catch(err => console.error(err.message))
         .finally(() => {
         if (exports.projectConfig.profileTime !== false) {
             const timeTakenInMillis = new Date().getTime() - startTime;

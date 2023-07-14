@@ -44,7 +44,7 @@ const glob_1 = require("glob");
 const ignore_1 = __importDefault(require("ignore"));
 const path_1 = __importDefault(require("path"));
 const constants_1 = __importDefault(require("../defaults/constants"));
-const node_1 = require("../lib/deploy/node");
+const deploy_1 = require("../lib/deploy");
 const utils_1 = require("../lib/utils");
 function getFileContent(filePath) {
     return fs_1.default.existsSync(filePath)
@@ -55,7 +55,7 @@ const gitIgnorePatterns = (0, ignore_1.default)()
     .add('.git')
     .add(getFileContent('.gitignore'))
     .add(getFileContent('.git/info/exclude'));
-const createBuildZipArchiveStream = (config) => __awaiter(void 0, void 0, void 0, function* () {
+const createCodeBaseZipArchiveStream = (config) => __awaiter(void 0, void 0, void 0, function* () {
     const archive = (0, archiver_1.default)('zip', { zlib: { level: 9 } });
     const codeFiles = yield (0, glob_1.glob)('**/*', { cwd: '.', dot: true, ignore: config.codeBaseZipIgnore });
     yield Promise.all(codeFiles.map((codeFilePath) => __awaiter(void 0, void 0, void 0, function* () {
@@ -83,6 +83,8 @@ const toDownloadZip = (options) => {
         return true;
     if (options.noDownload)
         return false;
+    if (toDeploy(options) && options.noDownload === false)
+        return true;
     if (toDeploy(options))
         return false;
     return true;
@@ -94,16 +96,18 @@ function createWriteStream(filePath) {
 }
 const fun = (buildConfig, options) => {
     console.log('Sending source codes to build host ...');
-    return createBuildZipArchiveStream(buildConfig)
+    return createCodeBaseZipArchiveStream(buildConfig)
         .then((archive) => __awaiter(void 0, void 0, void 0, function* () {
         const formData = buildFormData(archive);
         formData.append('body', JSON.stringify({
             downloadBuildZip: toDownloadZip(options) || toDeploy(options),
-            buildInfo: Object.assign(Object.assign({}, buildConfig.buildInfo), { bundlePath: utils_1.projectConfig.bundle.bundlePath }),
+            buildInfo: Object.assign(Object.assign({ commands: buildConfig.buildInfo.commands }, buildConfig.buildoh), { buildPath: buildConfig.buildPath }),
+            includeDependencyPackages: options.idp,
+            dependencyPackagesFilePatterns: buildConfig.dependencyPackagesFilePatterns,
         }));
         const response = yield (0, axios_1.default)({
             method: 'POST',
-            baseURL: buildConfig.api.baseUrl,
+            baseURL: buildConfig.buildoh.api.baseUrl,
             url: constants_1.default.BUILDOH_API_PATH,
             data: formData,
             headers: Object.assign(Object.assign({}, formData.getHeaders()), { 'app-name': buildConfig.appName }),
@@ -179,7 +183,7 @@ const fun = (buildConfig, options) => {
         if (toDeploy(options)) {
             zipDownloadPromise.then(() => {
                 if (fileWriter) {
-                    (0, node_1.main)({ bundlePath: fileWriter.path })
+                    (0, deploy_1.main)({ buildPath: fileWriter.path })
                         .then(() => {
                         if (!toDownloadZip(options)) {
                             fs_1.default.rmSync(fileWriter.path);
@@ -200,5 +204,5 @@ const fun = (buildConfig, options) => {
         .catch(console.error);
 };
 exports.default = (0, utils_1.logTimeTaken)(() => {
-    return fun(Object.assign(Object.assign({}, utils_1.projectConfig.buildoh), { appName: utils_1.projectConfig.appName }), utils_1.cliArgs);
+    return fun(Object.assign(Object.assign({}, utils_1.projectConfig.build), { buildoh: utils_1.projectConfig.build.buildoh, appName: utils_1.projectConfig.appName, buildPath: utils_1.projectConfig.build.buildPath, dependencyPackagesFilePatterns: utils_1.projectConfig.build.dependencyPackagesFilePatterns }), utils_1.cliArgs);
 });

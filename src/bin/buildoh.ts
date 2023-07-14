@@ -9,7 +9,7 @@ import {glob} from 'glob'
 import ignore from 'ignore'
 import path from 'path'
 import Constants from '../defaults/constants'
-import {main} from '../lib/deploy/node'
+import {main} from '../lib/deploy'
 import {cliArgs, logTimeTaken, projectConfig} from '../lib/utils'
 
 function getFileContent(filePath) {
@@ -24,7 +24,7 @@ const gitIgnorePatterns = ignore()
 	.add(getFileContent('.gitignore'))
 	.add(getFileContent('.git/info/exclude'))
 
-const createBuildZipArchiveStream = async config => {
+const createCodeBaseZipArchiveStream = async config => {
 	const archive = archiver('zip', {zlib: {level: 9}})
 	const codeFiles = await glob('**/*', {cwd: '.', dot: true, ignore: config.codeBaseZipIgnore})
 
@@ -59,6 +59,7 @@ const toDeploy = (options: BuildCliOptions) => {
 const toDownloadZip = (options: BuildCliOptions) => {
 	if (options.downloadTo) return true
 	if (options.noDownload) return false
+	if (toDeploy(options) && options.noDownload === false) return true
 	if (toDeploy(options)) return false
 
 	return true
@@ -74,21 +75,24 @@ function createWriteStream(filePath) {
 const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 	console.log('Sending source codes to build host ...')
 
-	return createBuildZipArchiveStream(buildConfig)
+	return createCodeBaseZipArchiveStream(buildConfig)
 		.then(async archive => {
 			const formData = buildFormData(archive)
 
 			formData.append('body', JSON.stringify({
 				downloadBuildZip: toDownloadZip(options) || toDeploy(options),
 				buildInfo: {
-					...buildConfig.buildInfo,
-					bundlePath: projectConfig.bundle.bundlePath,
+					commands: buildConfig.buildInfo.commands,
+					...buildConfig.buildoh,
+					buildPath: buildConfig.buildPath,
 				},
+				includeDependencyPackages: options.idp,
+				dependencyPackagesFilePatterns: buildConfig.dependencyPackagesFilePatterns,
 			}))
 
 			const response = await axios({
 				method: 'POST',
-				baseURL: buildConfig.api.baseUrl,
+				baseURL: buildConfig.buildoh.api.baseUrl,
 				url: Constants.BUILDOH_API_PATH,
 				data: formData,
 				headers: {
@@ -179,7 +183,7 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 				zipDownloadPromise.then(() => {
 					// bug: separate promise for build response end and use that
 					if (fileWriter) {
-						main({bundlePath: fileWriter.path})
+						main({buildPath: fileWriter.path})
 							.then(() => {
 								if (!toDownloadZip(options)) {
 									fsSync.rmSync(fileWriter.path)
@@ -200,6 +204,9 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 }
 
 export interface BuildConfig {
+	buildoh: any
+	dependencyPackagesFilePatterns: string[]
+	buildPath: string
 	appName: string,
 	codeBaseZipIgnore?: string[],
 	api: {
@@ -209,6 +216,7 @@ export interface BuildConfig {
 }
 
 export interface BuildCliOptions {
+	idp: boolean
 	deploy: boolean
 	downloadTo?: string,
 	noDownload?: boolean
@@ -217,8 +225,11 @@ export interface BuildCliOptions {
 export default logTimeTaken(() => {
 	return fun(
 		{
-			...projectConfig.buildoh,
+			...projectConfig.build,
+			buildoh: projectConfig.build.buildoh,
 			appName: projectConfig.appName,
+			buildPath: projectConfig.build.buildPath,
+			dependencyPackagesFilePatterns: projectConfig.build.dependencyPackagesFilePatterns,
 		},
 		cliArgs,
 	)

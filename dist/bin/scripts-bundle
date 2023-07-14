@@ -1,9 +1,0 @@
-#!/usr/bin/env node
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const node_1 = __importDefault(require("../lib/bundle/node"));
-const utils_1 = require("../lib/utils");
-exports.default = (0, utils_1.logTimeTaken)(() => (0, node_1.default)(utils_1.projectConfig.bundle, utils_1.cliArgs));

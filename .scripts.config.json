@@ -1,35 +1,48 @@
 {
   "profileTime": true,
   "appName": "test-zz",
-  "bundle": {
-    "bundlePath": "./dist/bundle",
-    "bundledDependencies": "*",
-    "esbuildConfig": {
-      "entryPoints": [
-        "test/index.js"
-      ],
-      "minify": true,
-      "bundle": true,
-      "metafile": false
-    },
-    "cleanBundleIgnoreDelete": []
-  },
   "deployment": {
-    "deploymentIgnoreDelete": [],
     "dev": {
       "api": {
         "baseUrl": "http://localhost:8011"
       }
     }
   },
-  "buildoh": {
-    "codeBaseZipIgnore": [
+  "build": {
+    "buildInfo": {
+      "usesDbdBuilder": true,
+      "bundle": {
+        "bundledDependencies": "*",
+        "esbuildConfig": {
+          "entryPoints": [
+            "test/index.js"
+          ],
+          "minify": true,
+          "bundle": true,
+          "metafile": false
+        }
+      }
+    },
+    "buildoh": {
+      "codeBaseZipIgnore": [
+        "node_modules/**"
+      ],
+      "api": {
+        "baseUrl": "http://localhost:8011"
+      }
+    },
+    "buildPath": "./dist/lib",
+    "dependencyPackagesFilePatterns": [
       "node_modules/**"
     ],
-    "api": {
-      "baseUrl": "http://localhost:8011"
-    },
-    "buildInfo": {
-    }
+    "cleanBuildIgnoreDelete": [],
+    "copyFiles": [
+      {
+        "cwd": ".",
+        "pattern": [
+          "test/**/*"
+        ]
+      }
+    ]
   }
 }
