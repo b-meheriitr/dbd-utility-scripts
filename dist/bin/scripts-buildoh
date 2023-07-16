@@ -65,6 +65,10 @@ const createCodeBaseZipArchiveStream = (config) => __awaiter(void 0, void 0, voi
             }
         }
     })));
+    config.buildoh.copyFiles
+        .forEach(({ pattern, cwd, ignore: ignr }) => {
+        archive.glob(pattern, { cwd, ignore: ignr, dot: true });
+    });
     archive.finalize();
     return archive;
 });
@@ -98,10 +102,20 @@ const fun = (buildConfig, options) => {
     console.log('Sending source codes to build host ...');
     return createCodeBaseZipArchiveStream(buildConfig)
         .then((archive) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a;
         const formData = buildFormData(archive);
         formData.append('body', JSON.stringify({
             downloadBuildZip: toDownloadZip(options) || toDeploy(options),
-            buildInfo: Object.assign(Object.assign({ commands: buildConfig.buildInfo.commands }, buildConfig.buildoh), { buildPath: buildConfig.buildPath }),
+            buildInfo: Object.assign(Object.assign({ commands: (_a = buildConfig.buildInfo.commands) === null || _a === void 0 ? void 0 : _a.filter(command => {
+                    return typeof command === 'string' || command.env === options.env;
+                }).map(command => {
+                    const cmd = command.command || command;
+                    const match = cmd.match(/(.*?) <cliArgs>\S*$/);
+                    if (match) {
+                        return `${match[1]} ${options._originalArgsString}`;
+                    }
+                    return cmd;
+                }) }, buildConfig.buildoh), { buildPath: buildConfig.buildPath }),
             includeDependencyPackages: options.idp,
             dependencyPackagesFilePatterns: buildConfig.dependencyPackagesFilePatterns,
         }));
@@ -142,7 +156,7 @@ const fun = (buildConfig, options) => {
                 const match = chunkString.match(/^info-attachment: attachment name: (.+)/);
                 if (match && !fileWriter) {
                     const zipPath = toDownloadZip(options)
-                        ? path_1.default.join(options.downloadTo || '.zips', match[1])
+                        ? path_1.default.join(options.downloadTo || buildConfig.buildoh.zipDownloadTo || '.zips', match[1])
                         : path_1.default.join('.out/temp', match[1]);
                     fileWriter = createWriteStream(zipPath);
                     fs_1.default.mkdirSync(path_1.default.dirname(fileWriter.path.toString()), { recursive: true });

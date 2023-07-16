@@ -38,6 +38,11 @@ const createCodeBaseZipArchiveStream = async config => {
 		}),
 	)
 
+	config.buildoh.copyFiles
+		.forEach(({pattern, cwd, ignore: ignr}) => {
+			archive.glob(pattern, {cwd, ignore: ignr, dot: true})
+		})
+
 	archive.finalize()
 
 	return archive
@@ -82,7 +87,20 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 			formData.append('body', JSON.stringify({
 				downloadBuildZip: toDownloadZip(options) || toDeploy(options),
 				buildInfo: {
-					commands: buildConfig.buildInfo.commands,
+					commands: buildConfig.buildInfo.commands?.filter(command => {
+						return typeof command === 'string' || command.env === options.env
+					})
+						.map(command => {
+							const cmd = command.command || command
+
+							const match = cmd.match(/(.*?) <cliArgs>\S*$/)
+
+							if (match) {
+								// eslint-disable-next-line no-underscore-dangle
+								return `${match[1]} ${options._originalArgsString}`
+							}
+							return cmd
+						}),
 					...buildConfig.buildoh,
 					buildPath: buildConfig.buildPath,
 				},
@@ -140,7 +158,7 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 
 					if (match && !fileWriter) {
 						const zipPath = toDownloadZip(options)
-						                ? path.join(options.downloadTo || '.zips', match[1])
+						                ? path.join(options.downloadTo || buildConfig.buildoh.zipDownloadTo || '.zips', match[1])
 						                : path.join('.out/temp', match[1])
 
 						fileWriter = createWriteStream(zipPath)
@@ -216,10 +234,12 @@ export interface BuildConfig {
 }
 
 export interface BuildCliOptions {
+	env: string
 	idp: boolean
 	deploy: boolean
 	downloadTo?: string,
 	noDownload?: boolean
+	_originalArgsString: string
 }
 
 export default logTimeTaken(() => {

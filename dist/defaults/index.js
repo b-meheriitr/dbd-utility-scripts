@@ -1,15 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NODE_DEFAULTS = exports.DEFAULTS = void 0;
+exports.NODE_DEFAULTS = exports.CLI_ARGS_DEFAULTS = exports.DEFAULTS = exports.mergeOverride = void 0;
 const lodash_1 = require("lodash");
+const mergeOverride = (json1, json2) => {
+    return (0, lodash_1.mergeWith)(json1, json2, (srcValue, targetValue) => ((0, lodash_1.isArray)(targetValue) ? targetValue : undefined));
+};
+exports.mergeOverride = mergeOverride;
 exports.DEFAULTS = {
     build: {
         copyFiles: [],
         cleanBuildIgnoreDelete: [],
+        buildoh: {
+            copyFiles: [],
+        },
     },
     deployment: {
         deploymentIgnoreDelete: [],
     },
+};
+exports.CLI_ARGS_DEFAULTS = {
+    env: 'dev',
 };
 exports.NODE_DEFAULTS = {
     build: {
@@ -34,4 +44,4 @@ exports.NODE_DEFAULTS = {
         deploymentIgnoreDelete: ['node_modules/**'],
     },
 };
-exports.default = (0, lodash_1.mergeWith)(exports.DEFAULTS, exports.NODE_DEFAULTS, (srcValue, targetValue) => ((0, lodash_1.isArray)(targetValue) ? targetValue : undefined));
+exports.default = (0, exports.mergeOverride)(exports.DEFAULTS, exports.NODE_DEFAULTS);

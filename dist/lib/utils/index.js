@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.copyFilePatterns = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
+exports.isHttpUrl = exports.copyFilePatterns = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
 const child_process_1 = require("child_process");
 const fs_1 = __importStar(require("fs"));
 const glob_1 = require("glob");
@@ -43,7 +43,8 @@ const lodash_1 = require("lodash");
 const minimist_1 = __importDefault(require("minimist"));
 const path_1 = __importDefault(require("path"));
 const rimraf_1 = require("rimraf");
-const defaults_1 = __importDefault(require("../../defaults"));
+const url_1 = __importDefault(require("url"));
+const defaults_1 = __importStar(require("../../defaults"));
 const runCommand = (command, cwd) => {
     return new Promise((resolve, reject) => {
         (0, child_process_1.exec)(command, { cwd }, (error, stdout, stderr) => {
@@ -64,7 +65,7 @@ function returnSubstituteIfErr(syncAction, substitute = null) {
     }
 }
 exports.returnSubstituteIfErr = returnSubstituteIfErr;
-exports.cliArgs = (0, lodash_1.mapValues)((0, lodash_1.mapKeys)((0, minimist_1.default)(process.argv.slice(2)), (_, key) => (0, lodash_1.camelCase)(key)), value => {
+exports.cliArgs = (0, defaults_1.mergeOverride)(Object.assign(Object.assign({}, (0, lodash_1.mapValues)((0, lodash_1.mapKeys)((0, minimist_1.default)(process.argv.slice(2)), (_, key) => (0, lodash_1.camelCase)(key)), value => {
     if (value === 'true') {
         return true;
     }
@@ -72,12 +73,19 @@ exports.cliArgs = (0, lodash_1.mapValues)((0, lodash_1.mapKeys)((0, minimist_1.d
         return false;
     }
     return value;
-});
-exports.projectConfig = (0, lodash_1.mergeWith)(defaults_1.default, JSON.parse(returnSubstituteIfErr(() => fs_1.default.readFileSync('.scripts.config.json'), '{}')), (srcValue, targetValue) => ((0, lodash_1.isArray)(targetValue) ? targetValue : undefined));
+})), { _originalArgsString: process.argv.slice(2).join(' ') }), defaults_1.CLI_ARGS_DEFAULTS);
+exports.projectConfig = (0, defaults_1.mergeOverride)(defaults_1.default, JSON.parse(returnSubstituteIfErr(() => fs_1.default.readFileSync('.scripts.config.json'), '{}')));
 function logTimeTaken(action) {
     const startTime = new Date().getTime();
     return Promise.resolve(action())
-        .catch(err => console.error(err.message))
+        .catch(err => {
+        if (exports.cliArgs.logStackTrace) {
+            console.error(err.stack);
+        }
+        else {
+            console.error(err.message);
+        }
+    })
         .finally(() => {
         if (exports.projectConfig.profileTime !== false) {
             const timeTakenInMillis = new Date().getTime() - startTime;
@@ -127,3 +135,13 @@ const copyFilePatterns = (filePatterns, destinationDir) => {
     })));
 };
 exports.copyFilePatterns = copyFilePatterns;
+function isHttpUrl(str) {
+    try {
+        const parsedUrl = new url_1.default.URL(str);
+        return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    }
+    catch (error) {
+        return false;
+    }
+}
+exports.isHttpUrl = isHttpUrl;

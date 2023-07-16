@@ -19,6 +19,8 @@ Builds on local.
 
 `--idp` : ✅ NodeJS. Install dependency packages if any to the buildDir.
 <br>
+`--deploy` : deploy after build completion
+<br>
 
 [//]: # (-----------------------------------------------------------------------)
 
@@ -67,6 +69,17 @@ Deploy build to the configured deployment host
 <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ℹ️This will remove dependencyPackages pattern to ignoreDelete in deploy API
+<br>
+`--buildPath` : Specify build path. Supports directory & files paths, URLs (for any required configuration, configure it
+in deployment.artifactZipUrlConfig (axios configuration))
+<br>
+
+[//]: # (-----------------------------------------------------------------------)
+
+## Common CLI arguments:
+
+`--logStackTrace` : pass to log the full stack trace if command breaks (Used for debug/information) purposes.
+<br>
 
 ## Configuration JSON (.scripts.config.json)
 
@@ -84,6 +97,19 @@ Deploy build to the configured deployment host
       "api": {
         // deployment API base URL
         "baseUrl": "http://localhost:8011"
+      },
+      // include files in zip for deployment (will add only if buildPath is a directory)
+      "copyFiles": [
+        {
+          "cwd": ".",
+          "pattern": ".out/**"
+        }
+      ]
+    },
+    // additional configuration(axios) if --buildPath is URL in scripts-deploy
+    "artifactZipUrlConfig": {
+      "headers": {
+        "app-name": "test-zz"
       }
     }
   },
@@ -100,8 +126,19 @@ Deploy build to the configured deployment host
        If not set to null then this commands will be used to build on `scripts-build` command
        */
       "commands": [
-        "npm i"
+        "npm i",
         // ... more of ur commands
+        "npm i --include=dev",
+        {
+          // environment specific commands
+          "env": "dev",
+          // Append <cliArgs> like below to ur command if your command should take cliArgs passed to script-buildoh
+          "command": "ts-node src/bin/build.js <cliArgs>"
+        },
+        {
+          "env": "test",
+          "command": "npm -v -- <cliArgs>"
+        }
       ],
       // ✅ For NodeJs esbuild bundables only
       "bundle": {
@@ -123,6 +160,13 @@ Deploy build to the configured deployment host
       "codeBaseZipIgnore": [
         "node_modules/**"
       ],
+      // additional file to include in the zip
+      "copyFiles": [
+        {
+          "cwd": ".",
+          "pattern": ".out/**"
+        }
+      ],
       // file patterns to not delete when cleaning the codebase before unzipping new codebase
       "cleanCodeBaseIgnoreDelete": [
         "node_modules/**",
@@ -131,7 +175,9 @@ Deploy build to the configured deployment host
       "api": {
         "baseUrl": "http://localhost:8011"
         // build API base URL
-      }
+      },
+      // override archive zip download location
+      "zipDownloadTo": ".zip3332"
     },
     "buildPath": "./dist/lib",
     "dependencyPackagesFilePatterns": [

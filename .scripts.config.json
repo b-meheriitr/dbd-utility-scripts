@@ -5,6 +5,17 @@
     "dev": {
       "api": {
         "baseUrl": "http://localhost:8011"
+      },
+      "copyFiles": [
+        {
+          "cwd": ".",
+          "pattern": ".out/**"
+        }
+      ]
+    },
+    "artifactZipUrlConfig": {
+      "headers": {
+        "app-name": "test-zz"
       }
     }
   },
@@ -21,15 +32,33 @@
           "bundle": true,
           "metafile": false
         }
-      }
+      },
+      "commands": [
+        "npm i --include=dev",
+        {
+          "env": "dev",
+          "command": "ts-node src/bin/build.js <cliArgs>"
+        },
+        {
+          "env": "test",
+          "command": "npm -v -- <cliArgs>"
+        }
+      ]
     },
     "buildoh": {
       "codeBaseZipIgnore": [
         "node_modules/**"
       ],
+      "copyFiles": [
+        {
+          "cwd": ".",
+          "pattern": ".out/**"
+        }
+      ],
       "api": {
         "baseUrl": "http://localhost:8011"
-      }
+      },
+      "zipDownloadTo": ".zip3332"
     },
     "buildPath": "./dist/lib",
     "dependencyPackagesFilePatterns": [

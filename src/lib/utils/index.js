@@ -2,11 +2,12 @@
 import {exec} from 'child_process'
 import fsSync, {promises as fs} from 'fs'
 import {glob} from 'glob'
-import {camelCase, isArray, mapKeys, mapValues, mergeWith} from 'lodash'
+import {camelCase, mapKeys, mapValues} from 'lodash'
 import minimist from 'minimist'
 import path from 'path'
 import {rimraf} from 'rimraf'
-import PROJECT_TYPE_DEFAULT_CONFIG from '../../defaults'
+import url from 'url'
+import PROJECT_TYPE_DEFAULT_CONFIG, {CLI_ARGS_DEFAULTS, mergeOverride} from '../../defaults'
 
 export const runCommand = (command, cwd) => {
 	return new Promise((resolve, reject) => {
@@ -28,30 +29,41 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 	}
 }
 
-export const cliArgs = mapValues(
-	mapKeys(minimist(process.argv.slice(2)), (_, key) => camelCase(key)),
-	value => {
-		if (value === 'true') {
-			return true
-		}
-		if (value === 'false') {
-			return false
-		}
-		return value
+export const cliArgs = mergeOverride(
+	{
+		...mapValues(
+			mapKeys(minimist(process.argv.slice(2)), (_, key) => camelCase(key)),
+			value => {
+				if (value === 'true') {
+					return true
+				}
+				if (value === 'false') {
+					return false
+				}
+				return value
+			},
+		),
+		_originalArgsString: process.argv.slice(2).join(' '),
 	},
+	CLI_ARGS_DEFAULTS,
 )
 
-export const projectConfig = mergeWith(
+export const projectConfig = mergeOverride(
 	PROJECT_TYPE_DEFAULT_CONFIG,
 	JSON.parse(returnSubstituteIfErr(() => fsSync.readFileSync('.scripts.config.json'), '{}')),
-	(srcValue, targetValue) => (isArray(targetValue) ? targetValue : undefined),
 )
 
 export function logTimeTaken(action) {
 	const startTime = new Date().getTime()
 
 	return Promise.resolve(action())
-		.catch(err => console.error(err.message))
+		.catch(err => {
+			if (cliArgs.logStackTrace) {
+				console.error(err.stack)
+			} else {
+				console.error(err.message)
+			}
+		})
 		.finally(() => {
 			if (projectConfig.profileTime !== false) {
 				const timeTakenInMillis = new Date().getTime() - startTime
@@ -115,4 +127,13 @@ export const copyFilePatterns = (filePatterns, destinationDir) => {
 			)
 		}),
 	)
+}
+
+export function isHttpUrl(str) {
+	try {
+		const parsedUrl = new url.URL(str)
+		return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:'
+	} catch (error) {
+		return false
+	}
 }

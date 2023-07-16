@@ -1,13 +1,28 @@
 import {isArray, mergeWith} from 'lodash'
 
+export const mergeOverride = (json1, json2) => {
+	return mergeWith(
+		json1,
+		json2,
+		(srcValue, targetValue) => (isArray(targetValue) ? targetValue : undefined),
+	)
+}
+
 export const DEFAULTS = {
 	build: {
 		copyFiles: [],
 		cleanBuildIgnoreDelete: [],
+		buildoh: {
+			copyFiles: [],
+		},
 	},
 	deployment: {
 		deploymentIgnoreDelete: [],
 	},
+}
+
+export const CLI_ARGS_DEFAULTS = {
+	env: 'dev',
 }
 
 export const NODE_DEFAULTS = {
@@ -34,8 +49,7 @@ export const NODE_DEFAULTS = {
 	},
 }
 
-export default mergeWith(
+export default mergeOverride(
 	DEFAULTS,
 	NODE_DEFAULTS,
-	(srcValue, targetValue) => (isArray(targetValue) ? targetValue : undefined),
 )

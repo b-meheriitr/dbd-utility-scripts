@@ -14,11 +14,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const build_1 = __importDefault(require("../lib/build"));
+const deploy_1 = require("../lib/deploy");
 const utils_1 = require("../lib/utils");
 function main() {
-    const buildCommands = utils_1.projectConfig.build.buildInfo.commands;
-    if (buildCommands && !utils_1.projectConfig.build.buildInfo.usesDbdBuilder) {
-        return () => __awaiter(this, void 0, void 0, function* () {
+    return __awaiter(this, void 0, void 0, function* () {
+        const buildCommands = utils_1.projectConfig.build.buildInfo.commands;
+        if (buildCommands && !utils_1.projectConfig.build.buildInfo.usesDbdBuilder) {
             for (const command of buildCommands) {
                 console.info(`⏳ running command '${command}'`);
                 const timeStart = new Date().getTime();
@@ -32,8 +33,15 @@ function main() {
                 const timeTaken = new Date().getTime() - timeStart;
                 console.info(`✅ completed '${command}' in ${timeTaken > 1000 ? `${timeTaken / 1000}s` : `${timeTaken}ms`}`);
             }
-        });
-    }
-    return () => (0, build_1.default)(utils_1.projectConfig.build, utils_1.cliArgs);
+        }
+        else {
+            yield (0, build_1.default)(utils_1.projectConfig.build, utils_1.cliArgs);
+        }
+    });
 }
-exports.default = (0, utils_1.logTimeTaken)(main());
+exports.default = (0, utils_1.logTimeTaken)(() => {
+    return main()
+        .then(() => {
+        return utils_1.cliArgs.deploy && (0, deploy_1.main)({ buildPath: utils_1.projectConfig.build.buildPath });
+    });
+});

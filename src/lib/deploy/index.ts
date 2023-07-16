@@ -2,19 +2,40 @@
 import archiver from 'archiver'
 import axios from 'axios'
 import FormData from 'form-data'
-import fsSync from 'fs'
+import fsSync, {promises as fs} from 'fs'
 import {minimatch} from 'minimatch'
 import Constants from '../../defaults/constants'
-import {cliArgs, projectConfig} from '../utils'
+import {cliArgs, isHttpUrl, projectConfig} from '../utils'
 
-const createZipArchiveStream = (buildPath: string, ignoreDelete) => {
-	if (fsSync.statSync(buildPath).isFile()) {
+const createZipArchiveStream = async ({buildPath, deploymentIgnoreDelete: ignoreDelete, copyFiles, ...config}) => {
+	if (isHttpUrl(buildPath)) {
+		const {data} = await axios({
+			method: 'get',
+			url: buildPath,
+			responseType: 'arraybuffer',
+			...config.artifactZipUrlConfig,
+		})
+			.catch(err => {
+				if (err.response.status === 404) {
+					throw new Error(
+						JSON.stringify(JSON.parse(Buffer.from(err.response.data).toString()), null, 4),
+					)
+				}
+				throw err
+			})
+
+		return data
+	}
+	if ((await fs.stat(buildPath).then(stat => stat.isFile(), () => false))) {
 		return fsSync.createReadStream(buildPath)
 	}
 
 	const archive = archiver('zip', {zlib: {level: 9}})
 
-	archive.glob('**/*', {cwd: buildPath, ignore: ignoreDelete})
+	archive.glob('**/*', {cwd: buildPath, ignore: ignoreDelete, dot: true})
+
+	copyFiles?.forEach(({pattern, cwd, ignore}) => archive.glob(pattern, {cwd, ignore, dot: true}))
+
 	archive.finalize()
 
 	return archive
@@ -34,7 +55,7 @@ const filterDependencyPackagePatterns = (list, dependencyPatterns) => {
 	)
 }
 
-export const deploy = (deployConfig: DeployConfig, options: DeployOptions) => {
+export const deploy = async (deployConfig: DeployConfig, options: DeployOptions) => {
 	console.log('Deploying to host ...')
 
 	if (options.installDependencyPackages) {
@@ -45,11 +66,7 @@ export const deploy = (deployConfig: DeployConfig, options: DeployOptions) => {
 	}
 
 	const formData = buildFormData(
-		deployConfig.zipStream
-		|| createZipArchiveStream(
-			deployConfig.buildPath,
-			deployConfig.deploymentIgnoreDelete,
-		),
+		deployConfig.zipStream || await createZipArchiveStream(deployConfig),
 		deployConfig.deploymentIgnoreDelete,
 	)
 
@@ -84,13 +101,14 @@ export interface DeployConfig {
 	api: {
 		baseUrl: string
 	}
+	copyFiles: string[]
 }
 
 export interface DeployOptions {
 	installDependencyPackages: boolean
 }
 
-function getEnvDeploymentConfig(deploymentConfig, env = 'dev') {
+function getEnvDeploymentConfig(deploymentConfig, env) {
 	if (env) {
 		const config = deploymentConfig[env]
 		if (!config) {
@@ -106,7 +124,7 @@ export const main = buildConfig => {
 	return deploy(
 		{
 			appName: projectConfig.appName,
-			buildPath: buildConfig?.buildPath || projectConfig.build.buildPath,
+			buildPath: buildConfig?.buildPath || cliArgs.buildPath || projectConfig.build.buildPath,
 			...projectConfig.deployment,
 			...getEnvDeploymentConfig(projectConfig.deployment, cliArgs.env),
 			dependencyPackagesFilePatterns: projectConfig.build.dependencyPackagesFilePatterns,
