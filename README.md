@@ -100,6 +100,7 @@ in deployment.artifactZipUrlConfig (axios configuration))
       },
       // include files in zip for deployment (will add only if buildPath is a directory)
       "copyFiles": [
+        "*.json",
         {
           "cwd": ".",
           "pattern": ".out/**"
@@ -162,6 +163,7 @@ in deployment.artifactZipUrlConfig (axios configuration))
       ],
       // additional file to include in the zip
       "copyFiles": [
+        "*.json",
         {
           "cwd": ".",
           "pattern": ".out/**"
@@ -173,8 +175,8 @@ in deployment.artifactZipUrlConfig (axios configuration))
         "dist/bundle/node_modules/**"
       ],
       "api": {
-        "baseUrl": "http://localhost:8011"
         // build API base URL
+        "baseUrl": "http://localhost:8011"
       },
       // override archive zip download location
       "zipDownloadTo": ".zip3332"
@@ -189,6 +191,7 @@ in deployment.artifactZipUrlConfig (axios configuration))
     ],
     // File patterns to copy to buildPath post build
     "copyFiles": [
+      "*.json",
       {
         "cwd": ".",
         "pattern": [

@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isHttpUrl = exports.copyFilePatterns = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
+exports.isHttpUrl = exports.copyFilePatterns = exports.copyFilesToArchiver = exports.clean = exports.logTimeTaken = exports.projectConfig = exports.cliArgs = exports.returnSubstituteIfErr = exports.runCommand = void 0;
 const child_process_1 = require("child_process");
 const fs_1 = __importStar(require("fs"));
 const glob_1 = require("glob");
@@ -114,8 +114,26 @@ const clean = ({ dirPath, ignore = [] }) => {
     });
 };
 exports.clean = clean;
+function copyFilesToArchiver(archiver, fileCopyPatterns) {
+    fileCopyPatterns.forEach(filePattern => {
+        if (typeof filePattern === 'string') {
+            archiver.glob(filePattern, { cwd: './', dot: true });
+        }
+        else {
+            archiver.glob(filePattern.pattern, {
+                cwd: filePattern.cwd,
+                ignore: filePattern.ignore,
+                dot: true,
+            });
+        }
+    });
+}
+exports.copyFilesToArchiver = copyFilesToArchiver;
 const copyFilePatterns = (filePatterns, destinationDir) => {
-    return Promise.all(filePatterns.map(({ cwd, pattern = '**/*', ignore }) => __awaiter(void 0, void 0, void 0, function* () {
+    return Promise.all(filePatterns.map((filePattern) => __awaiter(void 0, void 0, void 0, function* () {
+        const { cwd, pattern = '**/*', ignore } = typeof filePattern === 'string'
+            ? { cwd: './', pattern: filePattern, ignore: [] }
+            : filePattern;
         const matchedFiles = yield (0, glob_1.glob)(pattern, { cwd, ignore, dot: true });
         return Promise.all(matchedFiles.map((file) => __awaiter(void 0, void 0, void 0, function* () {
             const sourceFilePath = path_1.default.join(cwd, file);

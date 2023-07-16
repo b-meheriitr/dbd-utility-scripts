@@ -99,9 +99,30 @@ export const clean = ({dirPath, ignore = []}) => {
 		})
 }
 
+export function copyFilesToArchiver(archiver, fileCopyPatterns) {
+	fileCopyPatterns.forEach(filePattern => {
+		if (typeof filePattern === 'string') {
+			archiver.glob(filePattern, {cwd: './', dot: true})
+		} else {
+			archiver.glob(
+				filePattern.pattern,
+				{
+					cwd: filePattern.cwd,
+					ignore: filePattern.ignore,
+					dot: true,
+				},
+			)
+		}
+	})
+}
+
 export const copyFilePatterns = (filePatterns, destinationDir) => {
 	return Promise.all(
-		filePatterns.map(async ({cwd, pattern = '**/*', ignore}) => {
+		filePatterns.map(async filePattern => {
+			const {cwd, pattern = '**/*', ignore} = typeof filePattern === 'string'
+			                                        ? {cwd: './', pattern: filePattern, ignore: []}
+			                                        : filePattern
+
 			const matchedFiles = await glob(pattern, {cwd, ignore, dot: true})
 
 			return Promise.all(

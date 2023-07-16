@@ -10,7 +10,7 @@ import ignore from 'ignore'
 import path from 'path'
 import Constants from '../defaults/constants'
 import {main} from '../lib/deploy'
-import {cliArgs, logTimeTaken, projectConfig} from '../lib/utils'
+import {cliArgs, copyFilesToArchiver, logTimeTaken, projectConfig} from '../lib/utils'
 
 function getFileContent(filePath) {
 	return fsSync.existsSync(filePath)
@@ -38,10 +38,7 @@ const createCodeBaseZipArchiveStream = async config => {
 		}),
 	)
 
-	config.buildoh.copyFiles
-		.forEach(({pattern, cwd, ignore: ignr}) => {
-			archive.glob(pattern, {cwd, ignore: ignr, dot: true})
-		})
+	copyFilesToArchiver(archive, config.buildoh.copyFiles)
 
 	archive.finalize()
 

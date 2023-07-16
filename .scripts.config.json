@@ -7,6 +7,7 @@
         "baseUrl": "http://localhost:8011"
       },
       "copyFiles": [
+        "*.json",
         {
           "cwd": ".",
           "pattern": ".out/**"
@@ -50,6 +51,7 @@
         "node_modules/**"
       ],
       "copyFiles": [
+        "*.json",
         {
           "cwd": ".",
           "pattern": ".out/**"
@@ -66,6 +68,7 @@
     ],
     "cleanBuildIgnoreDelete": [],
     "copyFiles": [
+      "*.json",
       {
         "cwd": ".",
         "pattern": [

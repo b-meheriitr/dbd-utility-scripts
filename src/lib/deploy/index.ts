@@ -5,7 +5,7 @@ import FormData from 'form-data'
 import fsSync, {promises as fs} from 'fs'
 import {minimatch} from 'minimatch'
 import Constants from '../../defaults/constants'
-import {cliArgs, isHttpUrl, projectConfig} from '../utils'
+import {cliArgs, copyFilesToArchiver, isHttpUrl, projectConfig} from '../utils'
 
 const createZipArchiveStream = async ({buildPath, deploymentIgnoreDelete: ignoreDelete, copyFiles, ...config}) => {
 	if (isHttpUrl(buildPath)) {
@@ -34,7 +34,9 @@ const createZipArchiveStream = async ({buildPath, deploymentIgnoreDelete: ignore
 
 	archive.glob('**/*', {cwd: buildPath, ignore: ignoreDelete, dot: true})
 
-	copyFiles?.forEach(({pattern, cwd, ignore}) => archive.glob(pattern, {cwd, ignore, dot: true}))
+	if (copyFiles) {
+		copyFilesToArchiver(archive, copyFiles)
+	}
 
 	archive.finalize()
 

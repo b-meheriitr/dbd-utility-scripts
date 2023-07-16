@@ -71,7 +71,9 @@ const createZipArchiveStream = (_a) => __awaiter(void 0, void 0, void 0, functio
     }
     const archive = (0, archiver_1.default)('zip', { zlib: { level: 9 } });
     archive.glob('**/*', { cwd: buildPath, ignore: ignoreDelete, dot: true });
-    copyFiles === null || copyFiles === void 0 ? void 0 : copyFiles.forEach(({ pattern, cwd, ignore }) => archive.glob(pattern, { cwd, ignore, dot: true }));
+    if (copyFiles) {
+        (0, utils_1.copyFilesToArchiver)(archive, copyFiles);
+    }
     archive.finalize();
     return archive;
 });
