@@ -65,7 +65,7 @@ function returnSubstituteIfErr(syncAction, substitute = null) {
     }
 }
 exports.returnSubstituteIfErr = returnSubstituteIfErr;
-exports.cliArgs = (0, defaults_1.mergeOverride)(Object.assign(Object.assign({}, (0, lodash_1.mapValues)((0, lodash_1.mapKeys)((0, minimist_1.default)(process.argv.slice(2)), (_, key) => (0, lodash_1.camelCase)(key)), value => {
+exports.cliArgs = (0, defaults_1.mergeOverride)(defaults_1.CLI_ARGS_DEFAULTS, Object.assign(Object.assign({}, (0, lodash_1.mapValues)((0, lodash_1.mapKeys)((0, minimist_1.default)(process.argv.slice(2)), (_, key) => (0, lodash_1.camelCase)(key)), value => {
     if (value === 'true') {
         return true;
     }
@@ -73,7 +73,7 @@ exports.cliArgs = (0, defaults_1.mergeOverride)(Object.assign(Object.assign({}, 
         return false;
     }
     return value;
-})), { _originalArgsString: process.argv.slice(2).join(' ') }), defaults_1.CLI_ARGS_DEFAULTS);
+})), { _originalArgsString: process.argv.slice(2).join(' ') }));
 exports.projectConfig = (0, defaults_1.mergeOverride)(defaults_1.default, JSON.parse(returnSubstituteIfErr(() => fs_1.default.readFileSync('.scripts.config.json'), '{}')));
 function logTimeTaken(action) {
     const startTime = new Date().getTime();

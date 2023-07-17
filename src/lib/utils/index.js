@@ -30,6 +30,7 @@ export function returnSubstituteIfErr(syncAction, substitute = null) {
 }
 
 export const cliArgs = mergeOverride(
+	CLI_ARGS_DEFAULTS,
 	{
 		...mapValues(
 			mapKeys(minimist(process.argv.slice(2)), (_, key) => camelCase(key)),
@@ -45,7 +46,6 @@ export const cliArgs = mergeOverride(
 		),
 		_originalArgsString: process.argv.slice(2).join(' '),
 	},
-	CLI_ARGS_DEFAULTS,
 )
 
 export const projectConfig = mergeOverride(
