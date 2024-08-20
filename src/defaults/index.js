@@ -22,7 +22,8 @@ export const DEFAULTS = {
 }
 
 export const CLI_ARGS_DEFAULTS = {
-	env: 'dev',
+	env: 'default',
+	buildEnvs: ['default'],
 }
 
 export const NODE_DEFAULTS = {

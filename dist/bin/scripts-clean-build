@@ -1,8 +1,0 @@
-#!/usr/bin/env node
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const utils_1 = require("../lib/utils");
-exports.default = (0, utils_1.logTimeTaken)(() => (0, utils_1.clean)({
-    dirPath: utils_1.projectConfig.build.buildPath,
-    ignore: utils_1.projectConfig.build.cleanBuildIgnoreDelete,
-}));

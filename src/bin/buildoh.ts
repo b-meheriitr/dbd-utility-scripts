@@ -10,7 +10,7 @@ import ignore from 'ignore'
 import path from 'path'
 import Constants from '../defaults/constants'
 import {main} from '../lib/deploy'
-import {cliArgs, copyFilesToArchiver, logTimeTaken, projectConfig} from '../lib/utils'
+import {cliArgs, copyFilesToArchiver, filterCommands, logTimeTaken, projectConfig} from '../lib/utils'
 
 function getFileContent(filePath) {
 	return fsSync.existsSync(filePath)
@@ -26,12 +26,13 @@ const gitIgnorePatterns = ignore()
 
 const createCodeBaseZipArchiveStream = async config => {
 	const archive = archiver('zip', {zlib: {level: 9}})
-	const codeFiles = await glob('**/*', {cwd: '.', dot: true, ignore: config.codeBaseZipIgnore})
+	const codeFiles = await glob('**/*', {cwd: '.', dot: true, ignore: config.buildoh.codeBaseZipIgnore})
 
 	await Promise.all(
 		codeFiles.map(async codeFilePath => {
 			if (!gitIgnorePatterns.ignores(codeFilePath)) {
 				if ((await fs.stat(codeFilePath)).isFile()) {
+					console.info(`Adding file ${codeFilePath} to codebase zip`)
 					archive.file(codeFilePath, {name: codeFilePath})
 				}
 			}
@@ -75,7 +76,7 @@ function createWriteStream(filePath) {
 }
 
 const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
-	console.log('Sending source codes to build host ...')
+	console.log(`Sending source codes to build host ${buildConfig.buildoh.api.baseUrl} ...`)
 
 	return createCodeBaseZipArchiveStream(buildConfig)
 		.then(async archive => {
@@ -84,23 +85,17 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 			formData.append('body', JSON.stringify({
 				downloadBuildZip: toDownloadZip(options) || toDeploy(options),
 				buildInfo: {
-					commands: buildConfig.buildInfo.commands?.filter(command => {
-						return typeof command === 'string' || command.env === options.env
-					})
-						.map(command => {
-							const cmd = command.command || command
-
-							const match = cmd.match(/(.*?) <cliArgs>\S*$/)
-
-							if (match) {
-								// eslint-disable-next-line no-underscore-dangle
-								return `${match[1]} ${options._originalArgsString}`
-							}
-							return cmd
-						}),
+					commands: filterCommands(
+						buildConfig.buildInfo.commands,
+						{
+							...options,
+							buildEnvs: [...options.buildEnvs, 'buildoh'],
+						},
+					),
 					...buildConfig.buildoh,
 					buildPath: buildConfig.buildPath,
 				},
+				projectConfig: buildConfig.projectConfig,
 				includeDependencyPackages: options.idp,
 				dependencyPackagesFilePatterns: buildConfig.dependencyPackagesFilePatterns,
 			}))
@@ -219,6 +214,7 @@ const fun = (buildConfig: BuildConfig, options: BuildCliOptions) => {
 }
 
 export interface BuildConfig {
+	projectConfig: any
 	buildoh: any
 	dependencyPackagesFilePatterns: string[]
 	buildPath: string
@@ -232,6 +228,7 @@ export interface BuildConfig {
 
 export interface BuildCliOptions {
 	env: string
+	buildEnvs: string
 	idp: boolean
 	deploy: boolean
 	downloadTo?: string,
@@ -247,6 +244,7 @@ export default logTimeTaken(() => {
 			appName: projectConfig.appName,
 			buildPath: projectConfig.build.buildPath,
 			dependencyPackagesFilePatterns: projectConfig.build.dependencyPackagesFilePatterns,
+			projectConfig,
 		},
 		cliArgs,
 	)

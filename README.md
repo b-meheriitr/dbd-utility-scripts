@@ -13,6 +13,16 @@ Offers various utility scripts for frequently used develop-build-deploy(dbd) tas
 <h3 style="color:orange">scripts-build</h3>
 
 Builds on local.
+
+#### cli options:
+
+`--idp` : ✅ NodeJS. Install dependency packages if any to the buildDir.
+<br>
+`--deploy` : deploy after build completion
+<br>
+`--buildEnvs` : Specify comma separated build envs
+<br>
+
 <br>
 
 #### cli options:
@@ -54,6 +64,9 @@ Build for current codebase on another machine. (Host machine should be running d
 <br>
 `--idp` : Include dependency packages in the download zip. (If `--deploy` flag is set, this will add dependencyPackages
 pattern to ignoreDelete in deploy API)
+<br>
+`--buildEnvs` : Specify comma separated build envs
+<br>
 
 [//]: # (-----------------------------------------------------------------------)
 
@@ -63,7 +76,7 @@ Deploy build to the configured deployment host
 
 #### cli options:
 
-`--env` : Pass the deployment environment host. (default is **dev**)
+`--env` : Pass the deployment environment host. (default is **default**)
 <br>
 `--idp` : Pass to include dependency packages in the build zip.
 <br>
@@ -72,6 +85,17 @@ Deploy build to the configured deployment host
 <br>
 `--buildPath` : Specify build path. Supports directory & files paths, URLs (for any required configuration, configure it
 in deployment.artifactZipUrlConfig (axios configuration))
+<br>
+
+[//]: # (-----------------------------------------------------------------------)
+
+<h3 style="color:orange">scripts-zip</h3>
+
+Zip buildDir
+
+#### cli options:
+
+`--idp` : Pass to include dependency packages in the zip.
 <br>
 
 [//]: # (-----------------------------------------------------------------------)
@@ -139,7 +163,27 @@ in deployment.artifactZipUrlConfig (axios configuration))
         {
           "env": "test",
           "command": "npm -v -- <cliArgs>"
-        }
+        },
+        {
+          "command": "npm run build",
+          // Will run for these environments
+          "envs": [
+            "win",
+            "buildoh"
+          ]
+        },
+        {
+          "command": "source ~/.nvm/nvm.sh && nvm use 16 && npm run build",
+          //command overridden by environments
+          "override": [
+            {
+              "command": "npm -v",
+              "envs": [
+                "local"
+              ]
+            }
+          ]
+        },
       ],
       // ✅ For NodeJs esbuild bundables only
       "bundle": {

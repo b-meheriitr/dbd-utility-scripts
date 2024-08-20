@@ -3,9 +3,15 @@ import esbuild from 'esbuild'
 import fsSync, {promises as fs} from 'fs'
 import _ from 'lodash'
 import path from 'path'
-import {copyFilePatterns, runCommand} from '../utils'
+import {runCommand} from '../utils'
 
-const projectPackageJson = JSON.parse(fsSync.readFileSync('./package.json').toString())
+const getProjectPackageJson = function () {
+	if (!global.projectPackageJson) {
+		global.projectPackageJson = JSON.parse(fsSync.readFileSync('./package.json').toString())
+	}
+
+	return global.projectPackageJson
+}
 
 const isBundledDepsAllDeps = ({bundledDependencies}) => bundledDependencies === '*' || bundledDependencies[0] === '*'
 
@@ -14,7 +20,7 @@ function createPackageJsonFile(config) {
 		path.join(config.buildPath, 'package.json'),
 		JSON.stringify(
 			_.pick(
-				projectPackageJson,
+				getProjectPackageJson(),
 				[
 					'name',
 					'engines',
@@ -49,7 +55,7 @@ export default ({buildInfo: {bundle: bundleInfo}, ...config}, args = {}) => {
 		// eslint-disable-next-line no-nested-ternary
 		external: bundleInfo.esbuildConfig.bundle
 		          ? isBundledDepsAllDeps(bundleInfo)
-		            ? Object.keys(projectPackageJson.dependencies)
+		            ? Object.keys(getProjectPackageJson().dependencies)
 		            : bundleInfo.bundledDependencies
 		          : undefined,
 	})
@@ -65,7 +71,6 @@ export default ({buildInfo: {bundle: bundleInfo}, ...config}, args = {}) => {
 					)
 			}
 		})
-		.then(() => copyFilePatterns(config.copyFiles, config.buildPath))
 		.catch(err => {
 			console.error(err)
 			return process.exit(1)

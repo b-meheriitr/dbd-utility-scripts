@@ -1,8 +1,11 @@
 /* eslint-disable no-console */
+import archiver from 'archiver'
+import axios from 'axios'
 import {exec} from 'child_process'
 import fsSync, {promises as fs} from 'fs'
 import {glob} from 'glob'
 import {camelCase, mapKeys, mapValues} from 'lodash'
+import {minimatch} from 'minimatch'
 import minimist from 'minimist'
 import path from 'path'
 import {rimraf} from 'rimraf'
@@ -11,12 +14,20 @@ import PROJECT_TYPE_DEFAULT_CONFIG, {CLI_ARGS_DEFAULTS, mergeOverride} from '../
 
 export const runCommand = (command, cwd) => {
 	return new Promise((resolve, reject) => {
-		exec(command, {cwd}, (error, stdout, stderr) => {
+		const childProcess = exec(command, {cwd}, (error, stdout, stderr) => {
 			if (error) {
 				reject(error)
 			}
 
 			resolve({stderr, stdout})
+		})
+
+		childProcess.stdout.on('data', data => {
+			console.info(`${data}`)
+		})
+
+		childProcess.stderr.on('data', data => {
+			console.info(`${data}`)
 		})
 	})
 }
@@ -44,6 +55,7 @@ export const cliArgs = mergeOverride(
 				return value
 			},
 		),
+		buildEnvs: minimist(process.argv.slice(2)).buildEnvs?.split(','),
 		_originalArgsString: process.argv.slice(2).join(' '),
 	},
 )
@@ -99,12 +111,12 @@ export const clean = ({dirPath, ignore = []}) => {
 		})
 }
 
-export function copyFilesToArchiver(archiver, fileCopyPatterns) {
+export function copyFilesToArchiver(archiverObj, fileCopyPatterns) {
 	fileCopyPatterns.forEach(filePattern => {
 		if (typeof filePattern === 'string') {
-			archiver.glob(filePattern, {cwd: './', dot: true})
+			archiverObj.glob(filePattern, {cwd: './', dot: true})
 		} else {
-			archiver.glob(
+			archiverObj.glob(
 				filePattern.pattern,
 				{
 					cwd: filePattern.cwd,
@@ -156,5 +168,90 @@ export function isHttpUrl(str) {
 		return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:'
 	} catch (error) {
 		return false
+	}
+}
+
+export const createZipArchiveStream = async ({
+	                                             buildPath,
+	                                             deploymentIgnoreDelete: ignoreDelete,
+	                                             copyFiles,
+	                                             ...config
+}) => {
+	if (isHttpUrl(buildPath)) {
+		const {data} = await axios({
+			method: 'get',
+			url: buildPath,
+			responseType: 'arraybuffer',
+			...config.artifactZipUrlConfig,
+		})
+			.catch(err => {
+				if (err.response.status === 404) {
+					throw new Error(
+						JSON.stringify(JSON.parse(Buffer.from(err.response.data).toString()), null, 4),
+					)
+				}
+				throw err
+			})
+
+		return data
+	}
+	if ((await fs.stat(buildPath).then(stat => stat.isFile(), () => false))) {
+		return fsSync.createReadStream(buildPath)
+	}
+
+	const archive = archiver('zip', {zlib: {level: 9}})
+
+	archive.glob('**/*', {cwd: buildPath, ignore: ignoreDelete, dot: true})
+
+	if (copyFiles) {
+		copyFilesToArchiver(archive, copyFiles)
+	}
+
+	archive.finalize()
+
+	return archive
+}
+
+export const filterDependencyPackagePatterns = (list, dependencyPatterns) => {
+	return list.filter(
+		pattern => !dependencyPatterns.some(blacklistedPattern => minimatch(pattern, blacklistedPattern)),
+	)
+}
+
+export const filterCommands = (commands, {buildEnvs, _originalArgsString}) => {
+	return commands.map(command => {
+		if (typeof command === 'string') return command
+
+		// console.log(command)
+		if (command.env !== undefined || command.envs !== undefined) {
+			command.envs = command.envs || (command.env !== undefined ? [command.env] : [])
+			// console.log(command.envs.some(env => buildEnvs.includes(env)), !command.override)
+
+			if (command.envs.some(env => buildEnvs.includes(env))) {
+				return command
+			}
+			return false
+		}
+
+		return command.override
+			.find(overRideCommand => overRideCommand.envs.some(env => buildEnvs.includes(env)))
+			|| command
+	})
+		.filter(c => c)
+		.map(command => {
+			const cmd = command.command || command
+
+			const match = cmd.match(/(.*?) <cliArgs>\S*$/)
+
+			if (match) {
+				// eslint-disable-next-line no-underscore-dangle
+				return `${match[1]} ${_originalArgsString}`
+			}
+			return cmd
+		})
+}
+
+if (!cliArgs.logInfo) {
+	console.info = function () {
 	}
 }

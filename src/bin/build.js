@@ -2,36 +2,41 @@
 
 import build from '../lib/build'
 import {main as deployMain} from '../lib/deploy'
-import {cliArgs, logTimeTaken, projectConfig, runCommand} from '../lib/utils'
+import {cliArgs, copyFilePatterns, filterCommands, logTimeTaken, projectConfig, runCommand} from '../lib/utils'
 
 async function main() {
-	const buildCommands = projectConfig.build.buildInfo.commands
+	const buildCommands = projectConfig.build.buildInfo.commands && filterCommands(
+		projectConfig.build.buildInfo.commands,
+		cliArgs,
+	)
+
 	if (buildCommands && !projectConfig.build.buildInfo.usesDbdBuilder) {
 		// eslint-disable-next-line no-restricted-syntax
 		for (const command of buildCommands) {
 			// eslint-disable-next-line no-console
-			console.info(`⏳ running command '${command}'`)
+			console.log(`⏳ running command '${command}'`)
 			const timeStart = new Date().getTime()
 
 			// eslint-disable-next-line no-await-in-loop
-			const {stderr, stdout} = await runCommand(command)
+			await runCommand(command)
 				.catch(err => {
 					// eslint-disable-next-line no-console
-					console.info(`❌ command ${command} failed`)
+					console.log(`❌ command ${command} failed`)
 					throw err
 				})
 
-			// eslint-disable-next-line no-console
-			stdout && console.info(`ℹ️ ${stdout}`)
-			// eslint-disable-next-line no-console
-			stderr && console.info(`⚠️ ${stderr}`)
-
 			const timeTaken = new Date().getTime() - timeStart
 			// eslint-disable-next-line no-console
-			console.info(`✅ completed '${command}' in ${timeTaken > 1000 ? `${timeTaken / 1000}s` : `${timeTaken}ms`}`)
+			console.log(`✅ completed '${command}' in ${timeTaken > 1000 ? `${timeTaken / 1000}s` : `${timeTaken}ms`}`)
 		}
 	} else {
 		await build(projectConfig.build, cliArgs)
+	}
+
+	await copyFilePatterns(projectConfig.build.copyFiles, projectConfig.build.buildPath)
+
+	if (cliArgs.idp) {
+		await copyFilePatterns(projectConfig.build.dependencyPackagesFilePatterns, projectConfig.build.buildPath)
 	}
 }
 

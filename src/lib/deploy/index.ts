@@ -1,47 +1,8 @@
 /* eslint-disable no-console */
-import archiver from 'archiver'
 import axios from 'axios'
 import FormData from 'form-data'
-import fsSync, {promises as fs} from 'fs'
-import {minimatch} from 'minimatch'
 import Constants from '../../defaults/constants'
-import {cliArgs, copyFilesToArchiver, isHttpUrl, projectConfig} from '../utils'
-
-const createZipArchiveStream = async ({buildPath, deploymentIgnoreDelete: ignoreDelete, copyFiles, ...config}) => {
-	if (isHttpUrl(buildPath)) {
-		const {data} = await axios({
-			method: 'get',
-			url: buildPath,
-			responseType: 'arraybuffer',
-			...config.artifactZipUrlConfig,
-		})
-			.catch(err => {
-				if (err.response.status === 404) {
-					throw new Error(
-						JSON.stringify(JSON.parse(Buffer.from(err.response.data).toString()), null, 4),
-					)
-				}
-				throw err
-			})
-
-		return data
-	}
-	if ((await fs.stat(buildPath).then(stat => stat.isFile(), () => false))) {
-		return fsSync.createReadStream(buildPath)
-	}
-
-	const archive = archiver('zip', {zlib: {level: 9}})
-
-	archive.glob('**/*', {cwd: buildPath, ignore: ignoreDelete, dot: true})
-
-	if (copyFiles) {
-		copyFilesToArchiver(archive, copyFiles)
-	}
-
-	archive.finalize()
-
-	return archive
-}
+import {cliArgs, createZipArchiveStream, filterDependencyPackagePatterns, projectConfig} from '../utils'
 
 const buildFormData = (archive, ignoreDelete) => {
 	const formData = new FormData()
@@ -51,14 +12,8 @@ const buildFormData = (archive, ignoreDelete) => {
 	return formData
 }
 
-const filterDependencyPackagePatterns = (list, dependencyPatterns) => {
-	return list.filter(
-		pattern => !dependencyPatterns.some(blacklistedPattern => minimatch(pattern, blacklistedPattern)),
-	)
-}
-
 export const deploy = async (deployConfig: DeployConfig, options: DeployOptions) => {
-	console.log('Deploying to host ...')
+	console.log(`Deploying to host ${deployConfig.api.baseUrl} ...`)
 
 	if (options.installDependencyPackages) {
 		deployConfig.deploymentIgnoreDelete = filterDependencyPackagePatterns(
@@ -71,6 +26,8 @@ export const deploy = async (deployConfig: DeployConfig, options: DeployOptions)
 		deployConfig.zipStream || await createZipArchiveStream(deployConfig),
 		deployConfig.deploymentIgnoreDelete,
 	)
+
+	formData.append('skipRollback', (!!options.skipRollback).toString())
 
 	return axios({
 		method: 'POST',
@@ -108,6 +65,7 @@ export interface DeployConfig {
 
 export interface DeployOptions {
 	installDependencyPackages: boolean
+	skipRollback: boolean
 }
 
 function getEnvDeploymentConfig(deploymentConfig, env) {
@@ -133,6 +91,7 @@ export const main = buildConfig => {
 		},
 		{
 			installDependencyPackages: cliArgs.idp,
+			skipRollback: cliArgs.skipRollback,
 		},
 	)
 }

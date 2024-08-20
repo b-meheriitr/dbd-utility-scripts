@@ -1,6 +1,0 @@
-#!/usr/bin/env node
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const deploy_1 = require("../lib/deploy");
-const utils_1 = require("../lib/utils");
-exports.default = (0, utils_1.logTimeTaken)(deploy_1.main);

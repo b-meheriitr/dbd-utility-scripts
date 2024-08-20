@@ -2,7 +2,7 @@
   "profileTime": true,
   "appName": "test-zz",
   "deployment": {
-    "dev": {
+    "default": {
       "api": {
         "baseUrl": "http://localhost:8011"
       },
@@ -22,7 +22,7 @@
   },
   "build": {
     "buildInfo": {
-      "usesDbdBuilder": true,
+      "usesDbdBuilder": false,
       "bundle": {
         "bundledDependencies": "*",
         "esbuildConfig": {
@@ -35,14 +35,32 @@
         }
       },
       "commands": [
-        "npm i --include=dev",
+        "node -v",
         {
-          "env": "dev",
-          "command": "ts-node src/bin/build.js <cliArgs>"
+          "command": "node -v",
+          "env": "local"
         },
         {
-          "env": "test",
-          "command": "npm -v -- <cliArgs>"
+          "command": "npm -v",
+          "env": "win"
+        },
+        {
+          "command": "source ~/.nvm/nvm.sh && nvm use 16 && npm run build",
+          "override": [
+            {
+              "command": "npm -v",
+              "envs": [
+                "local"
+              ]
+            }
+          ]
+        },
+        {
+          "command": "npm run build",
+          "envs": [
+            "win",
+            "buildoh"
+          ]
         }
       ]
     },
@@ -62,13 +80,14 @@
       },
       "zipDownloadTo": ".zip3332"
     },
-    "buildPath": "./dist/lib",
+    "buildPath": "./dist",
     "dependencyPackagesFilePatterns": [
       "node_modules/**"
     ],
-    "cleanBuildIgnoreDelete": [],
+    "cleanBuildIgnoreDelete": [
+      "**/*"
+    ],
     "copyFiles": [
-      "*.json",
       {
         "cwd": ".",
         "pattern": [
